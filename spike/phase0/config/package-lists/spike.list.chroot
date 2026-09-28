@@ -1,0 +1,4 @@
+# Console-only spike: live-build adds the kernel, live-boot, live-config and
+# sysvinit-core itself. These are just enough to inspect the running system.
+sudo
+procps

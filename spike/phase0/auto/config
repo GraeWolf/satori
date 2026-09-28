@@ -1,0 +1,41 @@
+#!/bin/sh
+# Phase 0 spike: console-only Devuan Excalibur live ISO, hybrid BIOS + UEFI.
+set -e
+
+DEVUAN="http://deb.devuan.org/merged/"
+
+lb config noauto \
+	--mode debian \
+	--architecture amd64 \
+	--distribution excalibur \
+	--parent-distribution excalibur \
+	--archive-areas "main contrib non-free non-free-firmware" \
+	--parent-archive-areas "main contrib non-free non-free-firmware" \
+	--mirror-bootstrap "${DEVUAN}" \
+	--mirror-chroot "${DEVUAN}" \
+	--mirror-chroot-security "${DEVUAN}" \
+	--mirror-binary "${DEVUAN}" \
+	--mirror-binary-security "${DEVUAN}" \
+	--parent-mirror-bootstrap "${DEVUAN}" \
+	--parent-mirror-chroot "${DEVUAN}" \
+	--parent-mirror-chroot-security "${DEVUAN}" \
+	--parent-mirror-binary "${DEVUAN}" \
+	--parent-mirror-binary-security "${DEVUAN}" \
+	--keyring-packages devuan-keyring \
+	--security true \
+	--updates true \
+	--initsystem sysvinit \
+	--binary-images iso-hybrid \
+	--bootloaders "grub-pc grub-efi" \
+	--uefi-secure-boot disable \
+	--bootappend-live "boot=live components console=tty0 console=ttyS0,115200n8" \
+	--debian-installer none \
+	--memtest none \
+	--firmware-chroot false \
+	--firmware-binary false \
+	--iso-application "satori" \
+	--iso-volume "satori-phase0" \
+	--iso-publisher "satori project" \
+	--checksums sha256 \
+	--source false \
+	"${@}"

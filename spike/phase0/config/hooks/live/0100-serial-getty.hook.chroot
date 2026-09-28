@@ -1,0 +1,8 @@
+#!/bin/sh
+# Spike only: add a login prompt on the first serial port so QEMU smoke tests
+# can log in headlessly. sysvinit's default inittab has this line commented out.
+set -e
+
+if ! grep -q '^T0:' /etc/inittab; then
+	echo 'T0:23:respawn:/sbin/getty -L ttyS0 115200 vt100' >> /etc/inittab
+fi
