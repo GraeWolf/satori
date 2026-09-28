@@ -27,7 +27,7 @@ and configured by `satori-config`.
 | Bluetooth | `bluez`, `blueman` | |
 | Power/laptop | elogind (lid/suspend/hibernate, DEC-017), `brightnessctl`, `tlp` | Check that tlp has no systemd dependency |
 | Terminal | `alacritty` | `x-terminal-emulator` alternative |
-| File manager | `nautilus` + `gvfs` | Removable media and trash. Check that its file indexer (`localsearch`/`tinysparql`) has no systemd dependency, or disable indexing |
+| File manager | `thunar` + `gvfs`, `tumbler` | Removable media and trash. `tumbler` provides Thunar's thumbnails |
 | Editor | `neovim` (CLI) + `mousepad` (GUI) | |
 | Browser | `brave-origin` (default), `firefox-esr` (fallback) | DEC-028. Brave Origin from Brave's APT repo (DEC-026). Default set through `x-www-browser` and `mimeapps.list` in `/etc/skel`. Firefox policies in satori-config |
 | Keyring | `gnome-keyring`, `libpam-gnome-keyring` | DEC-030. Secret Service for Brave, Melia, Firefox and NetworkManager. Unlocked by PAM at tty1 login |

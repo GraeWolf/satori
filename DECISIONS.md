@@ -157,8 +157,7 @@ When a decision changes, edit the entry in place and add a dated line to its
 ### DEC-025 Desktop component selection
 - **Status:** Decided. Each package still has to be verified in Phase 2 (it must exist in Excalibur and pass the no-systemd rule).
 - The component table and keybindings in [docs/desktop-stack.md](docs/desktop-stack.md) are the source of truth. This entry covers the choices not recorded elsewhere, such as the bar, launcher, notifications, compositor, lock screen, terminal, file manager, editor, and keybindings.
-- **Risk:** `nautilus` brings in a large GNOME dependency tree, including a file indexer whose systemd-free status is unverified.
-- **History:** 2026-09-28 recorded as Proposed. Same day, the maintainer revised it (XLibre, nautilus, neovim, no nm-applet, new keybindings) and it was marked Decided.
+- **History:** 2026-09-28 recorded as Proposed. Same day, the maintainer revised it (XLibre, nautilus, neovim, no nm-applet, new keybindings) and it was marked Decided. Same day, the file manager was reverted from nautilus to thunar, to avoid nautilus's large GNOME dependency tree and its file indexer.
 
 ### DEC-026 Third-party APT repositories
 - **Status:** Decided
