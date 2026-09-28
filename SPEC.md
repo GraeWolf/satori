@@ -211,7 +211,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ The manifest is inspected, the allowlist in §4 is drafted, and no forbidden packages are present.
 - ✅ Findings are recorded in DECISIONS.md: whether live-build is confirmed or replaced (DEC-003), which `gum` path applies (DEC-021), and which `lb config` flags were needed.
 
-**Phase 1: Build system**
+**Phase 1: Build system**. ✔ Complete (2026-09-28). A clean clone of `1b35a66` built in about 7 minutes, and both boot tests passed. See DEC-031.
 - Scaffold the layout in §6: the container, `build.sh`, `check-no-systemd.sh`, and the manifest and build-info outputs.
 - ✅ `scripts/build.sh` on a clean checkout produces an ISO without manual steps.
 - ✅ An automated live boot test (BIOS and UEFI) plus the systemd runtime check pass.
