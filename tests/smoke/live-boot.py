@@ -6,8 +6,10 @@
 Defaults to "all" and the newest out/satori-*-amd64.iso. For each firmware
 mode it boots the ISO, presses "s" at the GRUB menu to pick the serial-console
 entry, logs in as the live user, and checks SPEC.md §4 rule 1: PID 1 is
-sysvinit's init and /run/systemd/system doesn't exist. Serial logs are
-written to out/serial-<mode>.log. Exits non-zero if any mode fails.
+sysvinit's init and /run/systemd/system doesn't exist. It then waits for the
+autologin desktop on tty1 and checks that the X server and every session
+component in DESKTOP_PROCESSES is running (Phase 2). Serial logs are written
+to out/serial-<mode>.log. Exits non-zero if any mode fails.
 """
 import glob
 import os
@@ -29,6 +31,13 @@ SERIAL_ENTRY_HOTKEY = "s"
 MENU_TIMEOUT = 60
 BOOT_TIMEOUT = 300
 CMD_TIMEOUT = 60
+DESKTOP_TIMEOUT = 120
+
+# Started on tty1 by autologin -> startx -> satori-session -> herbstluftwm autostart.
+DESKTOP_PROCESSES = [
+    "Xorg", "herbstluftwm", "polybar", "dunst", "picom", "lxpolkit", "copyq",
+    "xss-lock", "pipewire", "wireplumber", "pipewire-pulse",
+]
 
 # Assembled at runtime so the echoed command line never matches the markers.
 BEGIN, END = "__SATORI" + "_BEGIN__", "__SATORI" + "_END__"
@@ -37,6 +46,11 @@ CHECK_CMD = (
     'echo "PID1=$(cat /proc/1/comm)"; '
     '[ -d /run/systemd/system ] && echo RUN_SYSTEMD=present || echo RUN_SYSTEMD=absent; '
     "dpkg-query -W -f='${Package}\\n' | grep systemd | sed 's/^/PKG=/'; "
+    # Poll until every desktop process is up, or DESKTOP_TIMEOUT seconds pass.
+    f'i=0; while [ $i -lt {DESKTOP_TIMEOUT} ]; do n=0; '
+    f'for p in {" ".join(DESKTOP_PROCESSES)}; do pgrep -x $p >/dev/null || n=1; done; '
+    '[ $n = 0 ] && break; sleep 1; i=$((i+1)); done; '
+    f'for p in {" ".join(DESKTOP_PROCESSES)}; do pgrep -x $p >/dev/null && echo PROC_$p=up || echo PROC_$p=down; done; '
     'echo __SATORI""_END__\n'
 )
 
@@ -106,7 +120,7 @@ def run(mode, iso):
             con.expect("$ ", CMD_TIMEOUT)
             con.send(CHECK_CMD)
             con.expect(BEGIN, CMD_TIMEOUT)
-            output = con.expect(END, CMD_TIMEOUT)
+            output = con.expect(END, DESKTOP_TIMEOUT + CMD_TIMEOUT)
             con.send("sudo poweroff\n")
             try:
                 proc.wait(timeout=CMD_TIMEOUT)
@@ -122,12 +136,14 @@ def run(mode, iso):
     lines = [line.strip() for line in output.splitlines()]
     results = dict(line.split("=", 1) for line in lines if "=" in line and not line.startswith("PKG="))
     packages = [line[4:] for line in lines if line.startswith("PKG=")]
+    down = [p for p in DESKTOP_PROCESSES if results.get(f"PROC_{p}") != "up"]
 
     print(f"[{mode}] reached login prompt in {boot_secs:.0f}s")
     print(f"[{mode}] PID 1: {results.get('PID1')}")
     print(f"[{mode}] /run/systemd/system: {results.get('RUN_SYSTEMD')}")
     print(f"[{mode}] systemd-named packages: {', '.join(packages) or 'none'}")
-    ok = results.get("PID1") == "init" and results.get("RUN_SYSTEMD") == "absent"
+    print(f"[{mode}] desktop processes not running: {', '.join(down) or 'none'}")
+    ok = results.get("PID1") == "init" and results.get("RUN_SYSTEMD") == "absent" and not down
     print(f"{'PASS' if ok else 'FAIL'} [{mode}] (serial log: {log_path})")
     return ok
 

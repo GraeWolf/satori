@@ -1,0 +1,14 @@
+#!/bin/sh
+# Install the desktop (DEC-026). satori-apt-sources is already installed from
+# the package lists, so the third-party repositories are configured with the
+# same scoped keys, sources and pins as on an installed system. live-build
+# can't do that itself: its own repository mechanism trusts keys globally.
+set -e
+
+# The satori-desktop .deb is placed in /var/cache/satori by
+# scripts/build-in-container.sh (not in live-build's local repository, whose
+# packages live-build installs before this hook runs).
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y /var/cache/satori/satori-desktop_*_all.deb
+rm -rf /var/cache/satori

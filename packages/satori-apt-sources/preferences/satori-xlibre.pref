@@ -1,0 +1,10 @@
+# The XLibre repository may only provide the X server (DEC-026). It also
+# publishes x11proto-*-dev packages with the same names as Devuan's; those,
+# and anything else it publishes, can never be installed.
+Package: xlibre xlibre-* xserver-xlibre*
+Pin: origin "xlibre-debian.github.io"
+Pin-Priority: 500
+
+Package: *
+Pin: origin "xlibre-debian.github.io"
+Pin-Priority: -1

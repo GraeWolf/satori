@@ -1,0 +1,6 @@
+satori-desktop (0.1) unstable; urgency=medium
+
+  * Initial release of the desktop metapackage; sets Brave Origin as the
+    default x-www-browser on first install.
+
+ -- satori project <noreply@satori.invalid>  Mon, 28 Sep 2026 12:00:00 +0000

@@ -1,0 +1,14 @@
+#!/bin/sh
+# Power menu (Mod+Shift+e). elogind's loginctl handles suspend, hibernate,
+# reboot and poweroff for the active session without a password.
+choice="$(printf '%s\n' lock logout suspend hibernate reboot poweroff \
+	| rofi -dmenu -i -no-custom -p power)" || exit 0
+
+case "${choice}" in
+	lock)      loginctl lock-session ;;
+	logout)    herbstclient quit ;;
+	suspend)   loginctl suspend ;;
+	hibernate) loginctl hibernate ;;
+	reboot)    loginctl reboot ;;
+	poweroff)  loginctl poweroff ;;
+esac

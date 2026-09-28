@@ -1,0 +1,4 @@
+files/etc/profile.d/satori-startx.sh etc/profile.d/
+files/usr/bin/* usr/bin/
+files/usr/share/satori/* usr/share/satori/
+files/etc/xdg/mimeapps.list etc/xdg/

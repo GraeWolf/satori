@@ -1,0 +1,9 @@
+# Brave's repository may only provide Brave Origin and its keyring package
+# (DEC-026). Anything else it publishes can never be installed.
+Package: brave-origin brave-keyring
+Pin: origin "brave-browser-apt-release.s3.brave.com"
+Pin-Priority: 500
+
+Package: *
+Pin: origin "brave-browser-apt-release.s3.brave.com"
+Pin-Priority: -1

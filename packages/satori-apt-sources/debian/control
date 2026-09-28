@@ -1,0 +1,22 @@
+Source: satori-apt-sources
+Section: admin
+Priority: optional
+Maintainer: satori project <noreply@satori.invalid>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: satori-apt-sources
+Architecture: all
+Depends: ${misc:Depends}
+Description: third-party APT repositories for satori
+ Configures the APT repositories satori needs beyond Devuan: Brave (for
+ Brave Origin) and XLibre (for the X server). Each repository's signing key
+ is scoped to that repository with Signed-By, and APT pins restrict each one
+ to the packages satori takes from it.
+ .
+ Brave's sources file uses the name and key path from Brave's own
+ instructions, which makes brave-keyring's postinst remove the key it would
+ otherwise link into /etc/apt/trusted.gpg.d, where APT trusts it for every
+ repository. The key at that path is satori's checksum-pinned copy;
+ brave-keyring's copy is diverted aside.

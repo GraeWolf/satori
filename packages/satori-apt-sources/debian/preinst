@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+# brave-keyring ships the same key at /usr/share/keyrings/brave-browser-archive-keyring.gpg.
+# satori ships its own checksum-pinned copy there (DEC-026), so brave-keyring's
+# copy is diverted aside. Works whether brave-keyring is installed first or later.
+if [ "$1" = install ] || [ "$1" = upgrade ]; then
+	mkdir -p /usr/share/satori/diverted
+	dpkg-divert --package satori-apt-sources --add --rename \
+		--divert /usr/share/satori/diverted/brave-browser-archive-keyring.gpg \
+		/usr/share/keyrings/brave-browser-archive-keyring.gpg
+fi
+
+#DEBHELPER#

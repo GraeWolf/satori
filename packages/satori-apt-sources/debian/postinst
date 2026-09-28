@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+# If brave-keyring was configured before this package, its postinst didn't see
+# our sources file and linked Brave's key into /etc/apt/trusted.gpg.d/, where
+# APT trusts it for every repository. Remove that link; brave-keyring's own
+# postinst does the same on its next upgrade (DEC-026 rule 5).
+if [ "$1" = configure ] && [ -L /etc/apt/trusted.gpg.d/brave-browser-release.gpg ]; then
+	rm -f /etc/apt/trusted.gpg.d/brave-browser-release.gpg
+fi
+
+#DEBHELPER#

@@ -65,8 +65,8 @@ In practice this means:
 ### 3.3 satori packages
 | Package | Contents |
 |---|---|
-| `satori-desktop` | Metapackage that depends on the full desktop stack ([docs/desktop-stack.md](docs/desktop-stack.md)). |
-| `satori-config` | System-wide defaults: `/etc/skel` dotfiles (including the default-browser `mimeapps.list`), herbstluftwm autostart, bar/launcher/notification configs, browser policies, firewall ruleset, NetworkManager MAC randomisation. Helper scripts: `satori-swap-resize` (DEC-017) and `satori-get-melia` (DEC-029). |
+| `satori-desktop` | Metapackage that depends on the full desktop stack ([docs/desktop-stack.md](docs/desktop-stack.md)). Installed during the build by a chroot hook, after `satori-apt-sources` has configured the third-party repositories (DEC-026). |
+| `satori-config` | System-wide defaults in `/usr/share/satori/` (used only when the user has no config of their own): the `satori-session` X session, herbstluftwm autostart and keybindings, polybar and picom configs, startx on tty1, the default browser, browser policies, firewall ruleset, NetworkManager MAC randomisation. Helper scripts: `satori-run-once`, `satori-keys`, `satori-powermenu`, `satori-screenshot`, `satori-get-melia` (DEC-029), and later `satori-swap-resize` (DEC-017). |
 | `satori-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026). |
 | `satori-branding` | `os-release`/`issue` via `dpkg-divert` (these files are owned by `base-files`), wallpapers, GRUB theme, logo assets. |
 | `satori-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)). Installed in the live image only, removed from the target. |
@@ -218,7 +218,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 
 **Phase 2: Desktop stack**
 - `satori-desktop` and `satori-config` packages. The live session autologs in and starts herbstluftwm.
-- ✅ The live session reaches herbstluftwm with the bar, launcher, notifications, network applet, and working audio (manual check in QEMU, plus on at least one real laptop).
+- ✅ The live session reaches herbstluftwm with the bar, launcher, notifications, the bar's network module (DEC-011), and working audio. `tests/smoke/live-boot.py` checks that every session process is running. Launcher, audio and network are checked by hand in QEMU and on at least one real laptop.
 - ✅ Every added package passes the no-systemd check, including those from third-party repositories. Any substitutions are documented in docs/desktop-stack.md.
 - ✅ Third-party repositories are restricted by their pins: `apt-cache policy` shows no Devuan package replaced by a Brave or XLibre package.
 - ✅ Brave Origin is the default browser, and it saves and recalls a password through gnome-keyring without an extra unlock prompt.

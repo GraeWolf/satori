@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = remove ] || [ "$1" = abort-install ] || [ "$1" = disappear ]; then
+	dpkg-divert --package satori-apt-sources --remove --rename \
+		--divert /usr/share/satori/diverted/brave-browser-archive-keyring.gpg \
+		/usr/share/keyrings/brave-browser-archive-keyring.gpg
+fi
+
+#DEBHELPER#

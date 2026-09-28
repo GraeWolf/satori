@@ -10,3 +10,17 @@
   allowlisted package.
 - Headless QEMU boot test for BIOS and UEFI (`tests/smoke/live-boot.py`) and an
   interactive launcher (`scripts/test-in-qemu.sh`).
+- Desktop (Phase 2): `satori-desktop`, `satori-config` and `satori-apt-sources`
+  packages, built from `packages/` into `out/packages/`. The live session logs
+  in on tty1 and starts herbstluftwm with polybar, rofi, dunst, picom, CopyQ,
+  PipeWire and gnome-keyring.
+- Brave Origin (default browser) and XLibre from their own repositories, with
+  keys scoped by `Signed-By`, APT pins, and a build-time check that no other
+  package came from them. `brave-keyring`'s globally trusted key is diverted.
+- Firmware and CPU microcode for common laptop hardware.
+- `satori-get-melia`: downloads Melia and installs it only if the signature and
+  checksum verify.
+
+### Fixed
+- Live-session autologin on Excalibur: live-config's sysvinit component never
+  ran, so satori ships its own using agetty `--autologin`.

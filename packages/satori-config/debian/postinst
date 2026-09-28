@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = configure ]; then
+	# Xsession starts x-session-manager; make satori-session the default.
+	update-alternatives --install /usr/bin/x-session-manager x-session-manager \
+		/usr/bin/satori-session 90
+fi
+
+#DEBHELPER#

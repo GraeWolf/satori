@@ -104,7 +104,8 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Status:** Decided
 - **Why:** It's the simplest setup and has the fewest moving parts. elogind still registers the session through PAM. The live session autologins on tty1.
 - **Alternative:** LightDM, if a graphical greeter is wanted later.
-- **History:** 2026-09-28 proposed and confirmed.
+- **Live session:** autologin on tty1–6 comes from satori's own live-config component (`live-build/config/includes.chroot/usr/lib/live/config/0161-satori-autologin`), using agetty's `--autologin`. live-config's `0160-sysvinit` is broken on Excalibur (see docs/desktop-stack.md §2).
+- **History:** 2026-09-28 proposed and confirmed. Same day (Phase 2), added the live-session autologin component.
 
 ### DEC-015 No Plymouth in v1
 - **Status:** Decided
@@ -175,7 +176,7 @@ When a decision changes, edit the entry in place and add a dated line to its
 ### DEC-025 Desktop component selection
 - **Status:** Decided. Each package still has to be verified in Phase 2 (it must exist in Excalibur and pass the no-systemd rule).
 - The component table and keybindings in [docs/desktop-stack.md](docs/desktop-stack.md) are the source of truth. This entry covers the choices not recorded elsewhere, such as the bar, launcher, notifications, compositor, lock screen, terminal, file manager, editor, and keybindings.
-- **History:** 2026-09-28 recorded as Proposed. Same day, the maintainer revised it (XLibre, nautilus, neovim, no nm-applet, new keybindings) and it was marked Decided. Same day, the file manager was reverted from nautilus to thunar, to avoid nautilus's large GNOME dependency tree and its file indexer.
+- **History:** 2026-09-28 recorded as Proposed. Same day, the maintainer revised it (XLibre, nautilus, neovim, no nm-applet, new keybindings) and it was marked Decided. Same day, the file manager was reverted from nautilus to thunar, to avoid nautilus's large GNOME dependency tree and its file indexer. Same day (Phase 2), the maintainer chose CopyQ to replace `clipmenu`, which isn't packaged in Excalibur.
 
 ### DEC-026 Third-party APT repositories
 - **Status:** Decided
@@ -184,12 +185,14 @@ When a decision changes, edit the entry in place and add a dated line to its
   2. Its `.sources` entry uses `Signed-By:` for that key alone and ships in the `satori-apt-sources` package, not as a loose file. It stays enabled on installed systems, so they receive updates.
   3. An `/etc/apt/preferences.d/` pin restricts it to the packages we want from it. Everything else from it gets priority -1, so it can't replace Devuan packages.
   4. Its packages pass the no-systemd rule (SPEC §4), like any other package.
+  5. No package from that repository may leave its key somewhere APT trusts for every repository (such as `/etc/apt/trusted.gpg.d/`). Keeping each key scoped is the whole point of rule 2. Brave's `brave-keyring` links its key there from its postinst, unless it finds Brave's own sources file (`brave-browser-release.sources` with `Signed-By: /usr/share/keyrings/brave-browser-archive-keyring.gpg`). So `satori-apt-sources` ships exactly that file, puts satori's checksum-pinned key at that path, and diverts `brave-keyring`'s copy of the key aside. The build fails if any globally trusted key isn't owned by `devuan-keyring` or `debian-archive-keyring`.
+- **In the build:** live-build's own mechanism for extra repositories (`config/archives/*.key.chroot`) trusts keys globally, so it isn't used. The package lists install `satori-apt-sources`, then the chroot hook `0500-satori-desktop` runs `apt-get update` and installs `satori-desktop`. The build therefore uses exactly the keys, sources and pins that installed systems use. The hook `0510-check-apt-origins` then fails the build if any installed package came from a third-party repository outside its pin.
 - **Current repositories:**
   - Brave (for `brave-origin*`, DEC-028)
   - XLibre for Devuan (for `xlibre*`/`xserver-xlibre*`, DEC-027)
   - Devuan `excalibur-backports`. It's a Devuan repository, but it's pinned to the packages XLibre needs.
 - **Why:** Some chosen components aren't in Devuan stable. This doesn't conflict with DEC-006, which is about satori hosting its *own* repository.
-- **History:** 2026-09-28 decided.
+- **History:** 2026-09-28 decided. Same day (Phase 2), added rule 5 after finding that `brave-keyring` installs a globally trusted key, and recorded how the build applies the policy.
 
 ### DEC-027 X server: XLibre
 - **Status:** Decided, to be verified in Phase 2
@@ -207,7 +210,7 @@ When a decision changes, edit the entry in place and add a dated line to its
   - Brave Origin is Brave without AI, crypto, VPN, Rewards, Tor and most telemetry, and it's free on Linux.
   - Firefox ESR comes from Devuan's own repositories. It stays as a fallback that doesn't depend on an outside repository.
 - **Source:** `brave-origin` from Brave's official APT repository (DEC-026). Brave's stable channel only, never beta or nightly.
-- **Default:** Set through the `x-www-browser` alternative and `mimeapps.list` in `/etc/skel` (shipped by satori-config).
+- **Default:** `/etc/xdg/mimeapps.list` (shipped by satori-config) makes `brave-origin.desktop` the XDG default for web pages and links; a user's `~/.config/mimeapps.list` still wins. `satori-desktop`'s postinst points the `x-www-browser` alternative at `/usr/bin/brave-origin-stable`, on first install only, so a later choice survives upgrades.
 - **History:** 2026-09-28 decided.
 
 ### DEC-029 Melia: install on demand, not bundled

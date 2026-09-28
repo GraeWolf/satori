@@ -1,0 +1,84 @@
+#!/bin/sh
+# Download, verify and install Melia, the email client (DEC-029). Melia is
+# proprietary, so satori doesn't bundle it; this fetches the current release
+# from its publisher and installs it only if every check passes:
+#   1. SHA256SUMS carries a valid signature from Melia's key, pinned here by
+#      fingerprint (checked against the key's primary fingerprint).
+#   2. The .deb matches its checksum in SHA256SUMS.
+#
+# Usage:
+#   sudo satori-get-melia                  download, verify, install
+#   satori-get-melia --verify-only         download and verify, don't install
+#   satori-get-melia --from DIR [...]      use SHA256SUMS, SHA256SUMS.asc and the
+#                                          .deb from DIR instead of downloading
+set -eu
+
+MELIA_FPR="FB77913C2C0C27475E401B9550C4B20BF02180A0"
+KEYRING="${SATORI_MELIA_KEYRING:-/usr/share/satori/keyrings/melia.gpg}"
+BASE_URL="https://github.com/buxjr311/melia-app/releases/latest/download"
+
+from=""
+install=yes
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--from) from="${2:?--from needs a directory}"; shift 2 ;;
+		--verify-only) install=no; shift ;;
+		-h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+		*) echo "error: unknown argument: $1" >&2; exit 2 ;;
+	esac
+done
+
+die() { echo "satori-get-melia: $*" >&2; exit 1; }
+
+if [ "${install}" = yes ] && [ "$(id -u)" -ne 0 ]; then
+	die "installing needs root: sudo $0 (or use --verify-only)"
+fi
+[ -r "${KEYRING}" ] || die "Melia's key is missing: ${KEYRING}"
+
+work="$(mktemp -d)"
+trap 'rm -rf "${work}"' EXIT
+chmod 755 "${work}"   # apt's sandbox user must be able to read the .deb
+
+fetch() {   # fetch NAME: copy from --from DIR or download from the release
+	if [ -n "${from}" ]; then
+		cp "${from}/$1" "${work}/$1" || die "$1 not found in ${from}"
+	else
+		curl -fsSL --proto '=https' -o "${work}/$1" "${BASE_URL}/$1" || die "download failed: $1"
+	fi
+}
+
+echo "Fetching SHA256SUMS and its signature..."
+fetch SHA256SUMS
+fetch SHA256SUMS.asc
+
+# 1. Signature: gpgv only knows Melia's key; also require that the signing
+#    key's primary fingerprint is the one pinned above.
+if ! gpgv --keyring "${KEYRING}" --status-fd 3 \
+	"${work}/SHA256SUMS.asc" "${work}/SHA256SUMS" 3>"${work}/status" 2>"${work}/gpgv.log"; then
+	cat "${work}/gpgv.log" >&2
+	die "SHA256SUMS signature is NOT valid. Nothing was installed."
+fi
+signer="$(awk '$2 == "VALIDSIG" { print $NF }' "${work}/status")"
+[ "${signer}" = "${MELIA_FPR}" ] || die "SHA256SUMS was signed by ${signer:-an unknown key}, not Melia's key ${MELIA_FPR}. Nothing was installed."
+echo "Signature OK (key ${MELIA_FPR})."
+
+# 2. Find the amd64 .deb in SHA256SUMS. Entries look like
+#    "<sha256>  deb/x64/melia_<version>_amd64.deb"; the release asset is the basename.
+line="$(grep -E '^[0-9a-f]{64}  (.*/)?melia_[0-9A-Za-z.+~-]+_amd64\.deb$' "${work}/SHA256SUMS" | head -n 1 || true)"
+[ -n "${line}" ] || die "no amd64 .deb listed in SHA256SUMS"
+sum="${line%% *}"
+deb="$(basename "${line##* }")"
+
+echo "Fetching ${deb}..."
+fetch "${deb}"
+echo "${sum}  ${work}/${deb}" | sha256sum --check --quiet --strict - \
+	|| die "${deb} does NOT match its checksum. Nothing was installed."
+echo "Checksum OK."
+
+if [ "${install}" = no ]; then
+	echo "Verified ${deb} (not installed: --verify-only)."
+	exit 0
+fi
+
+DEBIAN_FRONTEND=noninteractive apt-get install -y "${work}/${deb}"
+echo "Melia installed. Note: Melia updates itself from inside the app, outside APT."

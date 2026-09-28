@@ -1,0 +1,44 @@
+#!/bin/sh
+# DEC-026: fail the build if a third-party repository supplied any package
+# other than those its pin allows (i.e. replaced a Devuan package), or if any
+# key APT trusts for every repository didn't come from Devuan's or Debian's
+# keyring packages.
+set -e
+
+for key in /etc/apt/trusted.gpg.d/*; do
+	[ -e "${key}" ] || continue
+	owner="$(dpkg-query -S "${key}" 2>/dev/null | cut -d: -f1 || true)"
+	case "${owner}" in
+		devuan-keyring|debian-archive-keyring) ;;
+		*) echo "FAIL: ${key} is trusted for every repository (owner: ${owner:-none})"; exit 1 ;;
+	esac
+done
+echo "OK: only Devuan and Debian keys are trusted globally"
+
+apt-cache policy $(dpkg-query -W -f '${Package}\n') | awk '
+	function allowed(pkg, url) {
+		if (url ~ /brave-browser-apt-release\.s3\.brave\.com/)
+			return pkg ~ /^(brave-origin|brave-keyring)$/
+		if (url ~ /xlibre-debian\.github\.io/)
+			return pkg ~ /^(xlibre|xlibre-.*|xserver-xlibre.*)$/
+		return 1
+	}
+	function finish() {
+		# Only a violation if no Devuan (or local) origin also offers this version.
+		if (pkg != "" && third != "" && !other)
+			if (!allowed(pkg, third)) { print "FAIL: " pkg " was installed from " third; bad = 1 }
+	}
+	/^[^ ].*:$/                 { finish(); pkg = substr($0, 1, length($0) - 1); inst = 0; third = ""; other = 0; next }
+	/^ \*\*\* /                 { inst = 1; next }
+	/^     [^ ]/                { inst = 0; next }
+	inst && /^        [-0-9]+ / {
+		url = $2
+		if (url ~ /brave-browser-apt-release|xlibre-debian/) third = url
+		else if (url != "/var/lib/dpkg/status") other = 1
+	}
+	END {
+		finish()
+		if (bad) exit 1
+		print "OK: third-party repositories supplied only their pinned packages"
+	}
+'

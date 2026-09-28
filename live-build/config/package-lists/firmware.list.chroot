@@ -1,0 +1,12 @@
+# Hardware support for laptops and desktops (DEC-013). Listed explicitly because
+# live-build's firmware autodetection is turned off (DEC-003).
+firmware-linux
+firmware-misc-nonfree
+firmware-amd-graphics
+firmware-iwlwifi
+firmware-realtek
+firmware-atheros
+firmware-brcm80211
+firmware-sof-signed
+intel-microcode
+amd64-microcode

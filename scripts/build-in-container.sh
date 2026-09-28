@@ -10,6 +10,7 @@ NAME="satori-${SATORI_VERSION}-amd64"
 WORK=/build
 
 rm -f /out/satori-*-amd64.* /out/build-info.txt /out/build.log
+rm -rf /out/packages
 
 rm -rf "${WORK}"
 mkdir -p "${WORK}/cache"
@@ -22,8 +23,22 @@ for stage in bootstrap chroot binary; do
 	ln -s "/out/cache/packages.${stage}" "${WORK}/cache/packages.${stage}"
 done
 
+# satori's own packages (packages/*), also copied to out/packages/ for updating
+# installed systems by hand (DEC-006). live-build installs every .deb in
+# config/packages.chroot/ during its package-list step, before the third-party
+# repositories exist, so satori-desktop goes into the chroot as a plain file
+# instead; config/hooks/normal/0500-satori-desktop.hook.chroot installs it.
+/src/scripts/build-packages.sh /src/packages /out/packages 2>&1 | tee /out/build.log
+mkdir -p "${WORK}/config/packages.chroot" "${WORK}/config/includes.chroot/var/cache/satori"
+for deb in /out/packages/*.deb; do
+	case "$(basename "${deb}")" in
+		satori-desktop_*) cp "${deb}" "${WORK}/config/includes.chroot/var/cache/satori/" ;;
+		*)                cp "${deb}" "${WORK}/config/packages.chroot/" ;;
+	esac
+done
+
 cd "${WORK}"
-lb config 2>&1 | tee /out/build.log
+lb config 2>&1 | tee -a /out/build.log
 lb build 2>&1 | tee -a /out/build.log
 
 cp live-image-amd64.packages "/out/${NAME}.packages"
