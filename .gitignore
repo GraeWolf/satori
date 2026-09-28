@@ -1,0 +1,27 @@
+# Build outputs
+out/
+live-build/config/packages.chroot/*.deb
+
+# live-build working state
+live-build/.build/
+live-build/cache/
+live-build/chroot/
+live-build/binary/
+live-build/*.iso
+live-build/*.log
+live-build/*.packages
+live-build/*.contents
+live-build/*.files
+
+# Package build artifacts
+packages/*.deb
+packages/*.buildinfo
+packages/*.changes
+packages/*/debian/.debhelper/
+packages/*/debian/debhelper-build-stamp
+packages/*/debian/*.substvars
+packages/*/debian/files
+
+# QEMU test disks
+tests/**/*.qcow2
+tests/**/*.img
