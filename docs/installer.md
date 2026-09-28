@@ -1,7 +1,7 @@
 # satori-installer
 
 A gum-based TUI that installs the running live system to a single whole disk,
-with optional LUKS2 encryption, on BIOS or UEFI machines. Scope is fixed by D-005.
+with optional LUKS2 encryption, on BIOS or UEFI machines. Scope is fixed by DEC-005.
 
 ## 1. Approach
 
@@ -19,7 +19,7 @@ study refractainstaller and reuse its approach where it fits.
 1. **Preflight**
    - The script must run as root in the live session. Otherwise it exits.
    - It detects the firmware mode (`/sys/firmware/efi` means UEFI, otherwise BIOS) and shows it. Installing in the other mode isn't supported.
-   - It lists candidate disks (`lsblk`), excluding the live medium, disks under 20 GB, and read-only devices.
+   - It lists candidate disks (`lsblk`), excluding the live medium, read-only devices, and disks smaller than 20 GiB plus the swapfile size (installed RAM, rounded up to the next GiB).
 2. **Target disk.** The user picks a disk with `gum choose`, which shows model, size, and existing partitions.
 3. **Encryption.** "Encrypt the disk?" (`gum confirm`). If yes, the user enters a passphrase twice (`gum input --password`), with a minimum length and a match check.
 4. **System settings**
@@ -37,9 +37,10 @@ study refractainstaller and reuse its approach where it fits.
     - Hostname, `/etc/hosts`, timezone, locale, and keyboard (`/etc/default/keyboard`)
     - Create the user, lock root
     - Purge `live-boot`, `live-config*`, and `satori-installer`, and undo live-only overlays
-    - Create the swapfile (P-017): `min(RAM, 8 GiB)`, mode 0600
+    - Create the swapfile (DEC-017): `/swapfile`, size = RAM rounded up to the next GiB, mode 0600, created with `mkswap --file` so it has no holes
+    - Configure resume: write `RESUME=UUID=<root fs UUID>` and `RESUME_OFFSET=<offset>` (the first physical extent from `filefrag -v /swapfile`) to `/etc/initramfs-tools/conf.d/resume`
     - For LUKS, `cryptsetup-initramfs` is installed
-    - Run `update-initramfs -u -k all`
+    - Run `update-initramfs -u -k all` (after the resume config, so the initramfs includes it)
     - Install the bootloader: `grub-install` (`grub-efi-amd64` with `--removable` as well as an NVRAM entry, or `grub-pc`), then `update-grub`
 11. **Finish.** Unmount, close LUKS, copy the install log to the target's `/var/log/satori-installer.log`, and offer to reboot.
 
@@ -84,6 +85,7 @@ unattended. The test harness in `tests/smoke/` builds that disk, runs the
 - The no-systemd runtime check passes.
 - The user can `sudo`.
 - `lsblk` shows the expected layout.
+- `/etc/initramfs-tools/conf.d/resume` matches the swapfile's current offset. Hibernate/resume itself is verified manually on real hardware (SPEC §7, Phase 3).
 - No live-* packages remain.
 
 This entry only works with the test disk present. Without it, `satori.autoinstall` does nothing.

@@ -12,8 +12,8 @@ and configured by `satori-config`.
 
 | Role | Choice | Notes |
 |---|---|---|
-| Display server | `xserver-xorg`, `xinit` | X11 only (D-004) |
-| Login | tty1 login → `startx` (P-014) | Live session: autologin on tty1 |
+| Display server | `xserver-xorg`, `xinit` | X11 only (DEC-004) |
+| Login | tty1 login → `startx` (DEC-014) | Live session: autologin on tty1 |
 | Seat/session | `elogind`, `libpam-elogind`, `polkitd` | Rootless X, device access, lid/power keys |
 | Window manager | `herbstluftwm` | |
 | Bar | `polybar` | Tags, window title, network, volume, battery, clock, tray |
@@ -22,10 +22,10 @@ and configured by `satori-config`.
 | Compositor | `picom` | Tear-free, minimal effects |
 | Polkit agent | `lxpolkit` | Needed for GUI privilege prompts |
 | Screen lock | `xss-lock` + `i3lock` | Locks on suspend and idle |
-| Network UI | `network-manager`, `network-manager-gnome` (nm-applet) | P-011 |
-| Audio | `pipewire`, `pipewire-pulse`, `wireplumber`, `pavucontrol`, `pamixer` | P-012 |
+| Network UI | `network-manager`, `network-manager-gnome` (nm-applet) | DEC-011 |
+| Audio | `pipewire`, `pipewire-pulse`, `wireplumber`, `pavucontrol`, `pamixer` | DEC-012 |
 | Bluetooth | `bluez`, `blueman` | |
-| Power/laptop | elogind (lid/suspend), `brightnessctl`, `tlp` | Check that tlp has no systemd dependency |
+| Power/laptop | elogind (lid/suspend/hibernate, DEC-017), `brightnessctl`, `tlp` | Check that tlp has no systemd dependency |
 | Terminal | `alacritty` | `x-terminal-emulator` alternative |
 | File manager | `thunar` + `gvfs`, `tumbler` | Removable media and trash |
 | Editor | `vim` (CLI) + `mousepad` (GUI) | |
@@ -35,8 +35,8 @@ and configured by `satori-config`.
 | Images/PDF | `feh` (also sets wallpaper), `zathura` | |
 | Fonts | `fonts-noto`, `fonts-noto-color-emoji`, `fonts-jetbrains-mono` | |
 | Theming | GTK theme and icon theme TBD in Phase 4, `lxappearance` | |
-| Firewall | `nftables` + satori ruleset | SPEC §3.6 |
-| Time sync | `chrony` | Must not use systemd-timesyncd |
+| Firewall | `nftables` + satori ruleset | DEC-023 |
+| Time sync | `chrony` | DEC-024. Must not use systemd-timesyncd |
 
 Optional `developer.list.chroot`: `git`, `build-essential`, `curl`, `jq`, `ripgrep`, `fd-find`, `tmux`, `shellcheck`.
 
@@ -78,7 +78,7 @@ and in a rofi cheatsheet on `Mod+F1`.
 | `Mod+q` | Close window |
 | `Mod+Shift+r` | Reload herbstluftwm |
 | `Mod+Escape` | Lock screen |
-| `Mod+Shift+e` | rofi power menu (logout, suspend, reboot, poweroff) |
+| `Mod+Shift+e` | rofi power menu (logout, suspend, hibernate, reboot, poweroff) |
 | `Mod+F1` | Keybinding cheatsheet |
 | `Print` / `Shift+Print` | Screenshot full / selection |
 | Media / brightness keys | pamixer / brightnessctl |

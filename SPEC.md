@@ -20,10 +20,10 @@ with `gum`.
 
 ### Non-goals (v1)
 - Custom kernel or kernel patches. We use Devuan's stock kernel.
-- A hosted APT repository. satori packages are built in-repo and baked into the ISO (see D-006).
+- A hosted APT repository. satori packages are built in-repo and baked into the ISO (see DEC-006).
 - Wayland. herbstluftwm is X11-only.
 - Manual partitioning, dual-boot, or filesystems other than ext4 in the installer.
-- Secure Boot (P-016), Plymouth (P-015), and hibernation (P-017).
+- Secure Boot (DEC-016) and Plymouth (DEC-015).
 - Architectures other than amd64.
 - Bit-for-bit reproducible ISOs. v1 targets a *repeatable* build (§5.3).
 
@@ -45,14 +45,14 @@ In practice this means:
 |---|---|
 | Base | Devuan Excalibur (`excalibur`, `excalibur-updates`, `excalibur-security`) |
 | Mirror | `deb.devuan.org/merged` |
-| Archive areas | `main contrib non-free non-free-firmware` (see P-013) |
+| Archive areas | `main contrib non-free non-free-firmware` (see DEC-013) |
 | Init | `sysvinit-core` |
 | Session/seat | `elogind` + `libpam-elogind`, `polkitd` |
 | Kernel | Devuan/Debian stock `linux-image-amd64` |
 | Package manager | APT, unmodified |
 
 ### 3.2 Build tooling
-- **live-build**, configured for Devuan. This is provisional until Phase 0 proves it works (D-003).
+- **live-build**, configured for Devuan. This is provisional until Phase 0 proves it works (DEC-003).
   - All `lb config` flags live in `live-build/auto/config`. Nobody types flags by hand.
   - Mirrors, distribution, and archive areas must be set explicitly to Devuan values. live-build defaults to Debian.
   - The fallback if live-build can't be made to work cleanly is Devuan's own tooling (live-sdk / refracta). Phase 0 decides.
@@ -71,21 +71,24 @@ In practice this means:
 Rule: **no loose overlay files for anything a user might need updated.** The
 `includes.chroot/` overlay is reserved for live-session-only tweaks.
 
-Because there's no hosted repo in v1 (D-006), installed systems get Devuan updates
+Because there's no hosted repo in v1 (DEC-006), installed systems get Devuan updates
 through APT but get satori package updates only by manually installing newer `.deb`s.
 This limitation should be documented for users.
 
 ### 3.4 Desktop stack
-herbstluftwm on Xorg, started with `startx` from a tty1 login (P-014). The full
+herbstluftwm on Xorg, started with `startx` from a tty1 login (DEC-014). The full
 component list, keybindings, and session startup order are in
 [docs/desktop-stack.md](docs/desktop-stack.md).
 
 ### 3.5 Installer
 A gum-based TUI that copies the live filesystem to disk. It supports guided
-whole-disk installs, with optional LUKS2 encryption, on BIOS and UEFI. Design:
-[docs/installer.md](docs/installer.md).
+whole-disk installs, with optional LUKS2 encryption, on BIOS and UEFI. It creates
+a RAM-sized swapfile and configures resume, so hibernation works out of the box
+(DEC-017). Design: [docs/installer.md](docs/installer.md).
 
 ### 3.6 Security and privacy defaults
+Recorded as DEC-022 (accounts) and DEC-023 (everything else).
+
 - Installer offers LUKS2 full-disk encryption (the root filesystem and swapfile are encrypted; `/boot` isn't).
 - nftables firewall enabled: inbound traffic denied except established/related, all outbound allowed.
 - `sudo` for the installer-created user; the root account is locked.
@@ -125,7 +128,7 @@ Output goes to `out/` (git-ignored):
 - `tests/` automated smoke tests, driven over the serial console:
   - The live image boots on BIOS and UEFI, a login prompt appears, and the no-systemd runtime check passes.
   - Install matrix: {BIOS, UEFI} × {plain, LUKS} = 4 unattended installs (answers file, [docs/installer.md](docs/installer.md) §6). Each installed system must reboot to a login prompt and pass the checks.
-- Manual QA checklist in `docs/testing.md`, for things that are hard to automate on real hardware: Wi-Fi, audio, suspend/resume, backlight, external monitors.
+- Manual QA checklist in `docs/testing.md`, for things that are hard to automate on real hardware: Wi-Fi, audio, suspend/resume, hibernate/resume, backlight, external monitors.
 
 ### 5.3 Reproducibility
 v1 promises a **repeatable** build. The same git SHA and the same container digest
@@ -135,11 +138,12 @@ reproducibility is a possible later goal.
 
 ### 5.4 Versioning and release
 - Versions follow `<major>.<minor>`, with the Devuan base in the release notes, for example "satori 0.1 (Excalibur)".
-- Git tags `v0.1` etc. Release artifacts are the ISO, its checksum, the manifest, and build-info. Where releases are hosted is still open.
+- Git tags `v0.1` etc. Release artifacts are the ISO, its checksum, the manifest, and build-info.
+- Releases are published on GitHub Releases (DEC-020). Each asset must be under 2 GiB, so the ISO size is tracked in build-info from Phase 2 on.
 - `CHANGELOG.md` is maintained from Phase 1 onward.
 
 ### 5.5 Licensing
-- Scripts and configs: to be decided (open question, see DECISIONS.md).
+- Everything in the repo except `branding/`: GPL-3.0-or-later (DEC-019), full text in `LICENSE`.
 - Branding assets: licensed separately, noted in `branding/LICENSE`.
 
 ## 6. Repository layout
@@ -147,6 +151,7 @@ reproducibility is a possible later goal.
 ```
 satori/
 ├── README.md
+├── LICENSE                        # GPL-3.0-or-later
 ├── SPEC.md
 ├── DECISIONS.md
 ├── CHANGELOG.md
@@ -194,7 +199,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - A throwaway live-build config for Excalibur produces a console-only hybrid ISO.
 - ✅ The ISO boots to a login prompt in QEMU on SeaBIOS and OVMF.
 - ✅ The manifest is inspected, the allowlist in §4 is drafted, and no forbidden packages are present.
-- ✅ Findings are recorded in DECISIONS.md: whether live-build is confirmed or replaced (D-003), whether gum is packaged in Excalibur, and which `lb config` flags were needed.
+- ✅ Findings are recorded in DECISIONS.md: whether live-build is confirmed or replaced (DEC-003), which `gum` path applies (DEC-021), and which `lb config` flags were needed.
 
 **Phase 1: Build system**
 - Scaffold the layout in §6: the container, `build.sh`, `check-no-systemd.sh`, and the manifest and build-info outputs.
@@ -210,6 +215,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - `satori-installer` (and `gum` if it has to be vendored).
 - ✅ All four unattended install-matrix runs pass (§5.2).
 - ✅ An interactive install on real hardware, with LUKS, boots and passes the manual checklist.
+- ✅ Hibernate and resume work on real hardware, with and without LUKS (DEC-017).
 
 **Phase 4: Branding**
 - `satori-branding`, the GRUB theme, wallpaper, and os-release diversion.
@@ -225,6 +231,6 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ The `v0.1` tag is released with its ISO, checksum, manifest, and build-info.
 
 ## 8. Notes for Claude Code sessions
-- Keep SPEC.md and DECISIONS.md current. When a proposed decision (P-xxx) is confirmed or changed, update both files in the same commit.
+- Keep SPEC.md and DECISIONS.md current. When a decision's status or content changes, update DECISIONS.md (with a dated History line) and every doc that references its `DEC-nnn` ID in the same commit.
 - Before adding any package, check that it exists in Excalibur and run the no-systemd check. Package names and systemd-free substitutes change between releases.
 - Never download build inputs without pinning them (a checksum or container digest).

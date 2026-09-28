@@ -6,14 +6,14 @@ the source of truth.
 
 ## Read first
 - [SPEC.md](SPEC.md): what we're building, the phases, and the acceptance criteria.
-- [DECISIONS.md](DECISIONS.md): decided (D-), proposed (P-), and open (O-) decisions, with rationale.
+- [DECISIONS.md](DECISIONS.md): every decision, with a permanent `DEC-nnn` ID, a status (Decided, Proposed, Open, or Superseded), rationale, and history.
 - [docs/desktop-stack.md](docs/desktop-stack.md) and [docs/installer.md](docs/installer.md): detailed designs.
 
 `devuan-custom-distro-spec.md` is the original rough draft. It's been superseded by the files above. Don't treat it as current.
 
 ## Working rules
 - **Keep the docs in sync.** When a decision changes, update DECISIONS.md (edit the entry and add a dated History line) and every doc that references it, in the same commit. Cross-check SPEC.md, docs/*, and DECISIONS.md for consistency.
-- **Don't silently change Decided (D-) entries.** Propose the change to the maintainer first. Proposed (P-) entries are safe defaults to build on, but flag them when they matter.
+- **Don't silently change Decided entries.** Propose the change to the maintainer first. Proposed entries are safe defaults to build on, but flag them when they matter. Never renumber or reuse a `DEC-nnn` ID.
 - **Work phase by phase** (SPEC.md §7). A phase is done only when all its ✅ criteria pass. Prefer small commits per phase step.
 - **Before adding any package,** check that it exists in Devuan Excalibur and passes the no-systemd rule (SPEC.md §4).
 - **Pin every external build input** by checksum or container digest.
