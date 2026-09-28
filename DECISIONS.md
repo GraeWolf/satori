@@ -23,12 +23,25 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Why:** It's Devuan's default and the best-tested path. runit and OpenRC are out of scope for v1.
 - **History:** 2026-09-28 decided.
 
-### DEC-003 Build tool: live-build
-- **Status:** Decided, provisional on Phase 0
-- **Why:** It's scriptable, well documented, and supports hybrid ISOs, package lists, hooks, and local `.deb` injection.
-- **Risk:** live-build is Debian's tool, not Devuan's official tool, and it defaults to Debian mirrors.
-- **Fallback:** Devuan live-sdk or refracta tooling, if Phase 0 can't produce a clean systemd-free image.
-- **History:** 2026-09-28 decided, pending Phase 0.
+### DEC-003 Build tool: Debian's live-build, pinned
+- **Status:** Decided, confirmed by Phase 0
+- **What:** Debian trixie's `live-build` `1:20250505+deb13u1`, pinned by SHA-256, pointed at Devuan's mirrors and keyring. **Not** Devuan's own `live-build` package.
+- **Why:** It's scriptable, well documented, and supports hybrid ISOs, package lists, hooks, and local `.deb` injection. Devuan's package (`4.0.3-1+devuan2`) is a 2016 fork of jessie-era live-build that was never updated. It has no `grub-efi` stage, so it can't build a UEFI-bootable ISO.
+- **Phase 0 result:** The spike (`spike/phase0/`) built a 317 MB console-only hybrid ISO. It booted to a login prompt in about 16 s on both SeaBIOS and OVMF, with sysvinit as PID 1.
+- **Required `lb config` settings** (full list in `spike/phase0/auto/config`):
+  - `--mode debian --distribution excalibur --parent-distribution excalibur`
+  - Every `--mirror-*` and `--parent-mirror-*` option set to `http://deb.devuan.org/merged/`. Security then resolves to `excalibur-security` correctly.
+  - `--keyring-packages devuan-keyring`
+  - `--initsystem sysvinit`. live-build then adds `live-config-sysvinit` and `sysvinit-core`.
+  - `--bootloaders "grub-pc grub-efi"`: GRUB for both firmware types, so one menu config and later one GRUB theme. The default BIOS loader (isolinux) has no menu timeout.
+  - `--uefi-secure-boot disable` (DEC-016)
+- **Carry into Phase 1:**
+  - The build container needs Devuan's `debootstrap` (it has the `excalibur` script).
+  - Install Debian's live-build `.deb` in the container, checksum-verified. The spike runs it from source, which needs a `dpkg-parsechangelog` shim.
+  - Keep live-build's package cache outside the per-build work directory. The spike deletes it on every run, so rebuilds re-download everything.
+  - The spike turned live-build's firmware autodetection off (`--firmware-chroot false`). Phase 2 must list DEC-013's firmware packages explicitly or prove that autodetection works against Devuan's mirrors.
+- **Fallback (not needed):** Devuan live-sdk or refracta tooling.
+- **History:** 2026-09-28 decided, pending Phase 0. Same day, Phase 0 confirmed it, and the choice was narrowed to Debian's current live-build after Devuan's fork was found to lack UEFI support.
 
 ### DEC-004 Desktop: herbstluftwm on X11
 - **Status:** Decided
@@ -62,9 +75,13 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-28 decided.
 
 ### DEC-010 Definition of "systemd-free"
-- **Status:** Decided. The allowlist gets finalised in Phase 0.
-- See [SPEC.md §4](SPEC.md#4-the-no-systemd-rule). `libsystemd0` (and anything else that turns out to be unavoidable) is allowed only through a commented allowlist entry.
-- **History:** 2026-09-28 decided.
+- **Status:** Decided
+- See [SPEC.md §4](SPEC.md#4-the-no-systemd-rule). A package whose name contains `systemd` is allowed only through a commented entry in `tests/systemd-allowlist.txt`.
+- **Allowlist after Phase 0:** `libsystemd0` only. It's a shared library with no daemon, and `libpam-modules` depends on it, so it's unavoidable on any Devuan system with PAM login.
+- **Required substitutions:**
+  - `opensysusers` (Devuan's systemd-free implementation) for the virtual package `systemd-sysusers`. Without it, apt satisfies dependencies like `cron-daemon-common`'s `systemd | systemd-standalone-sysusers | systemd-sysusers` with Debian's `systemd-standalone-sysusers`, which is built from systemd's source. `opensysusers` must be in the base package list.
+  - Devuan provides `eudev` (and `libudev1` from it) in place of systemd's udev. This needs no action.
+- **History:** 2026-09-28 decided. Same day, Phase 0 finalised the allowlist and recorded the `opensysusers` substitution.
 
 ### DEC-011 Networking: NetworkManager (nmcli/nmtui)
 - **Status:** Decided
@@ -129,9 +146,10 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-28 decided.
 
 ### DEC-021 Source of the `gum` binary
-- **Status:** Decided, with the outcome recorded in Phase 0
+- **Status:** Decided
 - **Policy:** Use the Excalibur package if one exists. Otherwise vendor a pinned upstream release, verify its checksum, and repackage it as an in-repo `gum` `.deb`.
-- **History:** 2026-09-28 decided. Phase 0 records which path applies.
+- **Outcome (Phase 0):** Excalibur `main` packages `gum` `0.14.4-1+b6`, so we use the distro package and there's no vendored `gum` package.
+- **History:** 2026-09-28 decided. Same day, Phase 0 found gum packaged in Excalibur.
 
 ### DEC-022 Accounts: sudo user, root locked
 - **Status:** Decided

@@ -53,10 +53,11 @@ In practice this means:
 | Third-party repos | Brave (`brave-origin`), XLibre for Devuan (`xlibre`), Devuan `excalibur-backports`, each pinned to specific packages (DEC-026) |
 
 ### 3.2 Build tooling
-- **live-build**, configured for Devuan. This is provisional until Phase 0 proves it works (DEC-003).
+- **Debian's live-build** (`1:20250505+deb13u1`, pinned by checksum), configured for Devuan (DEC-003). Devuan's own `live-build` package is a 2016 fork without UEFI support, so it isn't used.
   - All `lb config` flags live in `live-build/auto/config`. Nobody types flags by hand.
   - Mirrors, distribution, and archive areas must be set explicitly to Devuan values. live-build defaults to Debian.
-  - The fallback if live-build can't be made to work cleanly is Devuan's own tooling (live-sdk / refracta). Phase 0 decides.
+  - BIOS and UEFI both boot through GRUB (`--bootloaders "grub-pc grub-efi"`), so there's one boot menu config.
+  - live-build's package cache lives outside the per-build work directory, so rebuilds don't re-download everything.
   - Third-party repositories (DEC-026) are added to the build chroot from the same pinned keys and `.sources` files that `satori-apt-sources` ships. The build fails if a key doesn't match its recorded checksum.
 - **Build host:** a privileged Devuan Excalibur container (Podman or Docker) defined in `container/`, with the base image pinned by digest. Host OS doesn't matter.
 - **In-repo packages:** `packages/*` are built with `debhelper` inside the same container, then placed in `live-build/config/packages.chroot/` before `lb build`.
@@ -69,7 +70,6 @@ In practice this means:
 | `satori-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026). |
 | `satori-branding` | `os-release`/`issue` via `dpkg-divert` (these files are owned by `base-files`), wallpapers, GRUB theme, logo assets. |
 | `satori-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)). Installed in the live image only, removed from the target. |
-| `gum` | Only if gum isn't packaged in Excalibur: a pinned upstream release, checksum-verified, repackaged. |
 
 Rule: **no loose overlay files for anything a user might need updated.** The
 `includes.chroot/` overlay is reserved for live-session-only tweaks.
@@ -109,7 +109,7 @@ Recorded as DEC-022 (accounts) and DEC-023 (everything else).
 An image **passes** only if all of these hold:
 1. PID 1 is sysvinit's `init`, and `/run/systemd/system` doesn't exist.
 2. None of these packages are installed: `systemd`, `systemd-sysv`, `systemd-timesyncd`, `systemd-resolved`, `systemd-boot`, `libpam-systemd`.
-3. Every installed package whose name contains `systemd` is on an explicit allowlist in `tests/systemd-allowlist.txt`. We expect `libsystemd0` to be on it. Phase 0 settles the final list, and each entry needs a comment explaining why.
+3. Every installed package whose name contains `systemd` is on an explicit allowlist in `tests/systemd-allowlist.txt`. After Phase 0 it contains only `libsystemd0` (DEC-010). Each entry needs a comment explaining why. The base package list must include `opensysusers` so that nothing pulls in `systemd-standalone-sysusers`.
 
 Rules 2 and 3 are checked by `scripts/check-no-systemd.sh` against every build's
 package manifest. Rule 1 is checked at runtime by the QEMU smoke test. A failure
@@ -199,7 +199,7 @@ satori/
 
 Each phase is one or more small commits and ends only when every one of its criteria passes.
 
-**Phase 0: Feasibility spike**
+**Phase 0: Feasibility spike**. ✔ Complete (2026-09-28). See DEC-003, DEC-010 and DEC-021.
 - A throwaway live-build config for Excalibur produces a console-only hybrid ISO.
 - ✅ The ISO boots to a login prompt in QEMU on SeaBIOS and OVMF.
 - ✅ The manifest is inspected, the allowlist in §4 is drafted, and no forbidden packages are present.
@@ -219,7 +219,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ `satori-get-melia` installs Melia, and it refuses a download whose signature or checksum is wrong.
 
 **Phase 3: Installer**
-- `satori-installer` (and `gum` if it has to be vendored).
+- `satori-installer` (using Excalibur's `gum` package, DEC-021).
 - ✅ All four unattended install-matrix runs pass (§5.2).
 - ✅ An interactive install on real hardware, with LUKS, boots and passes the manual checklist.
 - ✅ Hibernate and resume work on real hardware, with and without LUKS (DEC-017).

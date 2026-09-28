@@ -1,3 +1,7 @@
 # Packages whose names contain "systemd" but are allowed in satori images
 # (SPEC.md §4, rule 3). One package per line; every entry needs a comment
 # saying why it's unavoidable. Drafted in Phase 0 from the spike manifest.
+
+# Shared library only (no daemon, no init). libpam-modules depends on it, so
+# every Devuan system with PAM login has it; Devuan itself ships it unchanged.
+libsystemd0

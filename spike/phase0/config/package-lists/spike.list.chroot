@@ -2,3 +2,8 @@
 # sysvinit-core itself. These are just enough to inspect the running system.
 sudo
 procps
+
+# cron-daemon-common depends on "systemd | systemd-standalone-sysusers |
+# systemd-sysusers"; without this apt picks Debian's systemd-built standalone
+# binary. opensysusers is Devuan's systemd-free implementation.
+opensysusers
