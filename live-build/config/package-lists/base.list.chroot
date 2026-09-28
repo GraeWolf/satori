@@ -1,0 +1,8 @@
+# Base system. Kept on installed systems.
+sysvinit-core
+sudo
+
+# Provides systemd-sysusers without systemd code. Without it, apt satisfies
+# dependencies such as cron-daemon-common's with Debian's
+# systemd-standalone-sysusers (DEC-010).
+opensysusers

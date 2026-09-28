@@ -1,0 +1,8 @@
+#!/bin/sh
+# Live session only: an inittab entry for satori-serial-getty, which gives a
+# serial login prompt when booted from the "serial console" GRUB entry.
+set -e
+
+if ! grep -q '^T0:' /etc/inittab; then
+	echo 'T0:23:respawn:/usr/local/sbin/satori-serial-getty' >> /etc/inittab
+fi

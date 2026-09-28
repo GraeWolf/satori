@@ -26,8 +26,6 @@ packages/*/debian/files
 tests/**/*.qcow2
 tests/**/*.img
 
-# Phase 0 spike downloads
-spike/phase0/.cache/
 
 # Python bytecode
 __pycache__/

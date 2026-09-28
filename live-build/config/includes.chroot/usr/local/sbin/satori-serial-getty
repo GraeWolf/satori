@@ -1,0 +1,8 @@
+#!/bin/sh
+# Live session only (see config/hooks/live/0100-serial-getty.hook.chroot).
+# Without satori.serial on the kernel command line there may be no serial port
+# at all, so idle instead of letting init respawn a failing getty.
+if grep -qw satori.serial /proc/cmdline; then
+	exec /sbin/getty -L ttyS0 115200 vt100
+fi
+exec sleep infinity

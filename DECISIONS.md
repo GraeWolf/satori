@@ -27,8 +27,8 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Status:** Decided, confirmed by Phase 0
 - **What:** Debian trixie's `live-build` `1:20250505+deb13u1`, pinned by SHA-256, pointed at Devuan's mirrors and keyring. **Not** Devuan's own `live-build` package.
 - **Why:** It's scriptable, well documented, and supports hybrid ISOs, package lists, hooks, and local `.deb` injection. Devuan's package (`4.0.3-1+devuan2`) is a 2016 fork of jessie-era live-build that was never updated. It has no `grub-efi` stage, so it can't build a UEFI-bootable ISO.
-- **Phase 0 result:** The spike (`spike/phase0/`) built a 317 MB console-only hybrid ISO. It booted to a login prompt in about 16 s on both SeaBIOS and OVMF, with sysvinit as PID 1.
-- **Required `lb config` settings** (full list in `spike/phase0/auto/config`):
+- **Phase 0 result:** The spike (`spike/phase0/`, removed in Phase 1 but kept in git history at `f96d08e`) built a 317 MB console-only hybrid ISO. It booted to a login prompt in about 16 s on both SeaBIOS and OVMF, with sysvinit as PID 1.
+- **Required `lb config` settings** (full list in `live-build/auto/config`):
   - `--mode debian --distribution excalibur --parent-distribution excalibur`
   - Every `--mirror-*` and `--parent-mirror-*` option set to `http://deb.devuan.org/merged/`. Security then resolves to `excalibur-security` correctly.
   - `--keyring-packages devuan-keyring`
@@ -228,3 +228,16 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Why:** Brave, Melia, Firefox and NetworkManager all store credentials through the Secret Service API. herbstluftwm provides none.
 - **Design:** `gnome-keyring` plus `libpam-gnome-keyring` unlocks the keyring with the login password at tty1. `.xinitrc` starts the secrets component inside the session's D-Bus. It must be verified in Phase 2 that this works with elogind and `startx`.
 - **History:** 2026-09-28 decided.
+
+### DEC-031 Build container: pinned Devuan image, rootful Podman or Docker
+- **Status:** Decided
+- **What:**
+  - `container/Containerfile` starts from `docker.io/devuan/devuan:excalibur`, pinned by digest.
+  - It installs Devuan's `debootstrap` and Debian's live-build `.deb`, verified by SHA-256. The fallback download is snapshot.debian.org's permanent address for that file.
+  - `sudo scripts/build.sh` builds the image and runs it `--privileged`. It uses Podman if installed, else Docker.
+- **Why:**
+  - It works the same on any host.
+  - live-build needs chroots, mounts and device nodes, which require a rootful, privileged container. Rootless Podman can't create device nodes, so debootstrap fails there.
+  - live-build runs in the container's own filesystem, so there are no bind-mount `nodev` problems. Only the `.deb` package cache is kept on the host (`out/cache/`).
+- **Updating the pins:** Change the digest or the live-build version and checksums in the Containerfile in one commit, and note it in CHANGELOG.md.
+- **History:** 2026-09-28 decided (Phase 1).

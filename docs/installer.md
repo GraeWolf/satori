@@ -76,8 +76,9 @@ initramfs) is needed.
 `USERNAME=`, `PASSWORD=`, `CONFIRM_DISK=`). It skips all prompts, then reboots or
 powers off when done.
 
-For automated tests, the live ISO has a hidden boot entry that adds
-`satori.autoinstall` and `console=ttyS0`. With that parameter, the live system looks
+For automated tests, the live ISO has a boot entry that adds `satori.autoinstall` to the
+existing "serial console" test entry (SPEC §5.2), which already provides `console=ttyS0`.
+With that parameter, the live system looks
 for an answers file on a small disk labelled `SATORI-TEST` and runs the installer
 unattended. The test harness in `tests/smoke/` builds that disk, runs the
 {BIOS, UEFI} × {plain, LUKS} matrix, and then boots each installed disk to check:

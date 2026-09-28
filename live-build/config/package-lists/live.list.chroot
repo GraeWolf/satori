@@ -1,0 +1,5 @@
+# Live session only; the installer removes these from installed systems.
+# Providing this file stops live-build generating its own live package list.
+live-boot
+live-config
+live-config-sysvinit

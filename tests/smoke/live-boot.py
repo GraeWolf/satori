@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Phase 0 smoke test: boot the spike ISO headless in QEMU and check it over serial.
+"""Live boot smoke test: boot the ISO headless in QEMU and check it over serial.
 
-    spike/phase0/test-in-qemu.py bios [ISO]
-    spike/phase0/test-in-qemu.py uefi [ISO]
+    tests/smoke/live-boot.py [bios|uefi|all] [ISO]
 
-Passes when the live system reaches a serial login prompt, the live user can
-log in, PID 1 is sysvinit's init, and /run/systemd/system doesn't exist
-(SPEC.md §4 rule 1). It also prints the systemd-named packages it finds.
-The full serial log is written next to the ISO.
+Defaults to "all" and the newest out/satori-*-amd64.iso. For each firmware
+mode it boots the ISO, presses "s" at the GRUB menu to pick the serial-console
+entry, logs in as the live user, and checks SPEC.md §4 rule 1: PID 1 is
+sysvinit's init and /run/systemd/system doesn't exist. Serial logs are
+written to out/serial-<mode>.log. Exits non-zero if any mode fails.
 """
+import glob
 import os
 import select
 import shutil
@@ -18,11 +19,14 @@ import tempfile
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DEFAULT_ISO = os.path.join(REPO, "out", "phase0", "satori-phase0-amd64.iso")
+OUT = os.path.join(REPO, "out")
 OVMF_CODE = "/usr/share/OVMF/OVMF_CODE_4M.fd"
 OVMF_VARS = "/usr/share/OVMF/OVMF_VARS_4M.fd"
 LIVE_USER, LIVE_PASSWORD = "user", "live"
+SERIAL_ENTRY_TITLE = "serial console"   # GRUB entry in live-build/config/bootloaders/grub-pc/grub.cfg
+SERIAL_ENTRY_HOTKEY = "s"
 
+MENU_TIMEOUT = 60
 BOOT_TIMEOUT = 300
 CMD_TIMEOUT = 60
 
@@ -80,15 +84,8 @@ def qemu_command(mode, iso, vars_copy):
     return cmd
 
 
-def main():
-    if len(sys.argv) not in (2, 3) or sys.argv[1] not in ("bios", "uefi"):
-        sys.exit(__doc__)
-    mode = sys.argv[1]
-    iso = os.path.abspath(sys.argv[2] if len(sys.argv) == 3 else DEFAULT_ISO)
-    if not os.path.exists(iso):
-        sys.exit(f"error: {iso} not found")
-
-    log_path = os.path.join(os.path.dirname(iso), f"serial-{mode}.log")
+def run(mode, iso):
+    log_path = os.path.join(OUT, f"serial-{mode}.log")
     with tempfile.TemporaryDirectory() as tmp, open(log_path, "w") as log:
         vars_copy = os.path.join(tmp, "OVMF_VARS.fd")
         if mode == "uefi":
@@ -99,6 +96,8 @@ def main():
         con = Serial(proc, log)
         started = time.monotonic()
         try:
+            con.expect(SERIAL_ENTRY_TITLE, MENU_TIMEOUT)
+            con.send(SERIAL_ENTRY_HOTKEY)
             con.expect("login:", BOOT_TIMEOUT)
             boot_secs = time.monotonic() - started
             con.send(LIVE_USER + "\n")
@@ -115,23 +114,43 @@ def main():
                 pass
         except (TimeoutError, RuntimeError) as err:
             print(f"FAIL [{mode}]: {err}. Serial log: {log_path}")
-            return 1
+            return False
         finally:
             if proc.poll() is None:
                 proc.kill()
 
-    results = dict(line.strip().split("=", 1) for line in output.splitlines()
-                   if "=" in line and not line.startswith("PKG="))
-    packages = [line.strip()[4:] for line in output.splitlines() if line.strip().startswith("PKG=")]
+    lines = [line.strip() for line in output.splitlines()]
+    results = dict(line.split("=", 1) for line in lines if "=" in line and not line.startswith("PKG="))
+    packages = [line[4:] for line in lines if line.startswith("PKG=")]
 
     print(f"[{mode}] reached login prompt in {boot_secs:.0f}s")
     print(f"[{mode}] PID 1: {results.get('PID1')}")
     print(f"[{mode}] /run/systemd/system: {results.get('RUN_SYSTEMD')}")
     print(f"[{mode}] systemd-named packages: {', '.join(packages) or 'none'}")
-
     ok = results.get("PID1") == "init" and results.get("RUN_SYSTEMD") == "absent"
     print(f"{'PASS' if ok else 'FAIL'} [{mode}] (serial log: {log_path})")
-    return 0 if ok else 1
+    return ok
+
+
+def main():
+    args = sys.argv[1:]
+    mode = args.pop(0) if args and args[0] in ("bios", "uefi", "all") else "all"
+    if len(args) > 1:
+        sys.exit(__doc__)
+    if args:
+        iso = os.path.abspath(args[0])
+    else:
+        isos = sorted(glob.glob(os.path.join(OUT, "satori-*-amd64.iso")), key=os.path.getmtime)
+        if not isos:
+            sys.exit("error: no out/satori-*-amd64.iso; run sudo scripts/build.sh first")
+        iso = isos[-1]
+    if not os.path.exists(iso):
+        sys.exit(f"error: {iso} not found")
+
+    print(f"Testing {iso}")
+    modes = ["bios", "uefi"] if mode == "all" else [mode]
+    results = [run(m, iso) for m in modes]
+    return 0 if all(results) else 1
 
 
 if __name__ == "__main__":

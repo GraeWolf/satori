@@ -59,7 +59,7 @@ In practice this means:
   - BIOS and UEFI both boot through GRUB (`--bootloaders "grub-pc grub-efi"`), so there's one boot menu config.
   - live-build's package cache lives outside the per-build work directory, so rebuilds don't re-download everything.
   - Third-party repositories (DEC-026) are added to the build chroot from the same pinned keys and `.sources` files that `satori-apt-sources` ships. The build fails if a key doesn't match its recorded checksum.
-- **Build host:** a privileged Devuan Excalibur container (Podman or Docker) defined in `container/`, with the base image pinned by digest. Host OS doesn't matter.
+- **Build host:** a privileged Devuan Excalibur container (Podman or Docker) defined in `container/`, with the base image pinned by digest (DEC-031). The host OS doesn't matter. It only needs the container engine and root.
 - **In-repo packages:** `packages/*` are built with `debhelper` inside the same container, then placed in `live-build/config/packages.chroot/` before `lb build`.
 
 ### 3.3 satori packages
@@ -119,17 +119,20 @@ fails the build.
 
 ### 5.1 Build
 ```
-scripts/build.sh            # builds container → builds packages/ → lb clean/config/build
+sudo scripts/build.sh       # builds container → builds packages/ → lb config/build → no-systemd check
 ```
+The version comes from the `VERSION` file. A clean checkout of tag `v<VERSION>` builds as `<VERSION>`; anything else builds as `<VERSION>-dev.<short commit>`.
 Output goes to `out/` (git-ignored):
 - `satori-<version>-amd64.iso` and `.sha256`
 - `satori-<version>-amd64.packages`: the package manifest
-- `build-info.txt`: git SHA, dirty flag, build date, container image digest, live-build version
+- `build-info.txt`: git SHA, dirty flag, build date, base image digest, build image ID, live-build version, ISO size and checksum, package count
+- `build.log`: the full live-build log
+- `cache/`: live-build's downloaded-package cache, reused between builds (root-owned)
 
 ### 5.2 Test
-- `scripts/test-in-qemu.sh`: boots the ISO under SeaBIOS or OVMF, either interactively or headless over the serial console.
-- `tests/` automated smoke tests, driven over the serial console:
-  - The live image boots on BIOS and UEFI, a login prompt appears, and the no-systemd runtime check passes.
+- `scripts/test-in-qemu.sh`: boots the ISO under SeaBIOS or OVMF in a QEMU window, for hands-on testing.
+- `tests/smoke/` automated tests, driven over the serial console. The live ISO's GRUB menu has a "serial console" entry (hotkey `s`) that sends kernel output to `ttyS0` and starts a serial login prompt. Tests press `s` at the menu; the default entry is unaffected.
+  - `tests/smoke/live-boot.py`: the live image boots on BIOS and UEFI, a login prompt appears, and the no-systemd runtime check passes.
   - Install matrix: {BIOS, UEFI} × {plain, LUKS} = 4 unattended installs (answers file, [docs/installer.md](docs/installer.md) §6). Each installed system must reboot to a login prompt and pass the checks.
 - Manual QA checklist in `docs/testing.md`, for things that are hard to automate on real hardware: Wi-Fi, audio, suspend/resume, hibernate/resume, backlight, external monitors.
 
@@ -154,6 +157,7 @@ reproducibility is a possible later goal.
 ```
 satori/
 ├── README.md
+├── VERSION                        # base version, e.g. 0.1
 ├── LICENSE                        # GPL-3.0-or-later
 ├── SPEC.md
 ├── DECISIONS.md
@@ -168,6 +172,7 @@ satori/
 │       │   ├── live.list.chroot   # live-only: live-boot, live-config, satori-installer
 │       │   └── developer.list.chroot
 │       ├── packages.chroot/       # generated: satori-*.deb (git-ignored)
+│       ├── bootloaders/grub-pc/   # GRUB menu for BIOS and UEFI, incl. the serial test entry
 │       ├── includes.chroot/       # live-session-only overlays
 │       ├── includes.binary/
 │       └── hooks/{normal,live}/
@@ -179,14 +184,15 @@ satori/
 │   └── satori-installer/{debian/,src/}
 ├── branding/                      # source assets (SVG etc.) → rendered into satori-branding
 ├── scripts/
-│   ├── build.sh
+│   ├── build.sh                   # host side: container build + run (needs root)
+│   ├── build-in-container.sh      # container side: live-build, checks, outputs
 │   ├── build-packages.sh
 │   ├── check-no-systemd.sh
 │   └── test-in-qemu.sh
 ├── tests/
 │   ├── systemd-allowlist.txt
 │   ├── answers/                   # installer answer files for the test matrix
-│   └── smoke/                     # serial-console test scripts
+│   └── smoke/                     # serial-console tests, e.g. live-boot.py
 └── docs/
     ├── building.md
     ├── customizing.md

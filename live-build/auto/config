@@ -1,5 +1,5 @@
 #!/bin/sh
-# Phase 0 spike: console-only Devuan Excalibur live ISO, hybrid BIOS + UEFI.
+# Every lb config flag for satori (DEC-003). Run by live-build; never type flags by hand.
 set -e
 
 DEVUAN="http://deb.devuan.org/merged/"
@@ -28,13 +28,16 @@ lb config noauto \
 	--binary-images iso-hybrid \
 	--bootloaders "grub-pc grub-efi" \
 	--uefi-secure-boot disable \
-	--bootappend-live "boot=live components console=tty0 console=ttyS0,115200n8" \
+	--bootappend-live "boot=live components quiet" \
 	--debian-installer none \
 	--memtest none \
 	--firmware-chroot false \
 	--firmware-binary false \
+	--cache true \
+	--cache-packages true \
+	--cache-indices false \
 	--iso-application "satori" \
-	--iso-volume "satori-phase0" \
+	--iso-volume "satori ${SATORI_VERSION:-dev}" \
 	--iso-publisher "satori project" \
 	--checksums sha256 \
 	--source false \

@@ -1,11 +1,11 @@
 #!/bin/sh
 # Rules 2 and 3 of the no-systemd rule (SPEC.md §4), checked against a
 # live-build package manifest (lines of "package<TAB>version").
-#   spike/phase0/check-no-systemd.sh out/phase0/satori-phase0-amd64.packages
+#   scripts/check-no-systemd.sh out/satori-<version>-amd64.packages
 set -eu
 
 MANIFEST="${1:?usage: $0 MANIFEST}"
-REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
 ALLOWLIST="${REPO}/tests/systemd-allowlist.txt"
 
 FORBIDDEN="systemd systemd-sysv systemd-timesyncd systemd-resolved systemd-boot libpam-systemd"
