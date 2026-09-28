@@ -12,7 +12,7 @@ and configured by `satori-config`.
 
 | Role | Choice | Notes |
 |---|---|---|
-| Display server | `xserver-xorg`, `xinit` | X11 only (DEC-004) |
+| Display server | `Xlibre`, `xinit` | X11 only (DEC-004) |
 | Login | tty1 login → `startx` (DEC-014) | Live session: autologin on tty1 |
 | Seat/session | `elogind`, `libpam-elogind`, `polkitd` | Rootless X, device access, lid/power keys |
 | Window manager | `herbstluftwm` | |
@@ -22,13 +22,13 @@ and configured by `satori-config`.
 | Compositor | `picom` | Tear-free, minimal effects |
 | Polkit agent | `lxpolkit` | Needed for GUI privilege prompts |
 | Screen lock | `xss-lock` + `i3lock` | Locks on suspend and idle |
-| Network UI | `network-manager`, `network-manager-gnome` (nm-applet) | DEC-011 |
+| Network UI | `network-manager` | DEC-011 |
 | Audio | `pipewire`, `pipewire-pulse`, `wireplumber`, `pavucontrol`, `pamixer` | DEC-012 |
 | Bluetooth | `bluez`, `blueman` | |
 | Power/laptop | elogind (lid/suspend/hibernate, DEC-017), `brightnessctl`, `tlp` | Check that tlp has no systemd dependency |
 | Terminal | `alacritty` | `x-terminal-emulator` alternative |
-| File manager | `thunar` + `gvfs`, `tumbler` | Removable media and trash |
-| Editor | `vim` (CLI) + `mousepad` (GUI) | |
+| File manager | `nautilus` + `gvfs`, `tumbler` | Removable media and trash |
+| Editor | `neovim` (CLI) + `mousepad` (GUI) | |
 | Browser | `firefox-esr` | Policies in satori-config |
 | Screenshots | `maim` + `xclip` | Bound to Print |
 | Clipboard | `xclip`, `clipmenu` | |
@@ -67,7 +67,7 @@ and in a rofi cheatsheet on `Mod+F1`.
 | Keys | Action |
 |---|---|
 | `Mod+Return` | Terminal |
-| `Mod+d` | rofi launcher |
+| `Mod+Space` | rofi launcher |
 | `Mod+Tab` | rofi window switcher |
 | `Mod+1..9` / `Mod+Shift+1..9` | Switch to / move window to tag |
 | `Mod+h/j/k/l` | Focus left/down/up/right |
@@ -75,12 +75,12 @@ and in a rofi cheatsheet on `Mod+F1`.
 | `Mod+u` / `Mod+o` | Split vertical / horizontal |
 | `Mod+r` | Remove frame |
 | `Mod+f` / `Mod+s` | Fullscreen / toggle floating |
-| `Mod+q` | Close window |
+| `Mod+w` | Close window |
 | `Mod+Shift+r` | Reload herbstluftwm |
 | `Mod+Escape` | Lock screen |
 | `Mod+Shift+e` | rofi power menu (logout, suspend, hibernate, reboot, poweroff) |
 | `Mod+F1` | Keybinding cheatsheet |
-| `Print` / `Shift+Print` | Screenshot full / selection |
+| `Mod+p` / `Shift+p` | Screenshot full / selection |
 | Media / brightness keys | pamixer / brightnessctl |
 
 ## 4. Configuration ownership
