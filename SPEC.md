@@ -20,7 +20,7 @@ with `gum`.
 
 ### Non-goals (v1)
 - Custom kernel or kernel patches. We use Devuan's stock kernel.
-- A hosted APT repository. satori packages are built in-repo and baked into the ISO (see DEC-006).
+- A satori-hosted APT repository. satori packages are built in-repo and baked into the ISO (see DEC-006). Third-party repositories are allowed only under DEC-026.
 - Wayland. herbstluftwm is X11-only.
 - Manual partitioning, dual-boot, or filesystems other than ext4 in the installer.
 - Secure Boot (DEC-016) and Plymouth (DEC-015).
@@ -50,12 +50,14 @@ In practice this means:
 | Session/seat | `elogind` + `libpam-elogind`, `polkitd` |
 | Kernel | Devuan/Debian stock `linux-image-amd64` |
 | Package manager | APT, unmodified |
+| Third-party repos | Brave (`brave-origin`), XLibre for Devuan (`xlibre`), Devuan `excalibur-backports`, each pinned to specific packages (DEC-026) |
 
 ### 3.2 Build tooling
 - **live-build**, configured for Devuan. This is provisional until Phase 0 proves it works (DEC-003).
   - All `lb config` flags live in `live-build/auto/config`. Nobody types flags by hand.
   - Mirrors, distribution, and archive areas must be set explicitly to Devuan values. live-build defaults to Debian.
   - The fallback if live-build can't be made to work cleanly is Devuan's own tooling (live-sdk / refracta). Phase 0 decides.
+  - Third-party repositories (DEC-026) are added to the build chroot from the same pinned keys and `.sources` files that `satori-apt-sources` ships. The build fails if a key doesn't match its recorded checksum.
 - **Build host:** a privileged Devuan Excalibur container (Podman or Docker) defined in `container/`, with the base image pinned by digest. Host OS doesn't matter.
 - **In-repo packages:** `packages/*` are built with `debhelper` inside the same container, then placed in `live-build/config/packages.chroot/` before `lb build`.
 
@@ -63,7 +65,8 @@ In practice this means:
 | Package | Contents |
 |---|---|
 | `satori-desktop` | Metapackage that depends on the full desktop stack ([docs/desktop-stack.md](docs/desktop-stack.md)). |
-| `satori-config` | System-wide defaults: `/etc/skel` dotfiles, herbstluftwm autostart, bar/launcher/notification configs, Firefox ESR policies, firewall ruleset, NetworkManager MAC randomisation. |
+| `satori-config` | System-wide defaults: `/etc/skel` dotfiles (including the default-browser `mimeapps.list`), herbstluftwm autostart, bar/launcher/notification configs, browser policies, firewall ruleset, NetworkManager MAC randomisation. Helper scripts: `satori-swap-resize` (DEC-017) and `satori-get-melia` (DEC-029). |
+| `satori-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026). |
 | `satori-branding` | `os-release`/`issue` via `dpkg-divert` (these files are owned by `base-files`), wallpapers, GRUB theme, logo assets. |
 | `satori-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)). Installed in the live image only, removed from the target. |
 | `gum` | Only if gum isn't packaged in Excalibur: a pinned upstream release, checksum-verified, repackaged. |
@@ -92,7 +95,7 @@ Recorded as DEC-022 (accounts) and DEC-023 (everything else).
 - Installer offers LUKS2 full-disk encryption (the root filesystem and swapfile are encrypted; `/boot` isn't).
 - nftables firewall enabled: inbound traffic denied except established/related, all outbound allowed.
 - `sudo` for the installer-created user; the root account is locked.
-- No `popularity-contest`. Firefox ESR policies turn off telemetry, studies, and sponsored content.
+- No `popularity-contest`. Firefox ESR policies turn off telemetry, studies, and sponsored content. Brave Origin's remaining telemetry, if any, is switched off with managed policies.
 - NetworkManager uses randomised MAC addresses when scanning Wi-Fi.
 - No services listen on the network by default. There's no SSH server.
 
@@ -172,6 +175,7 @@ satori/
 │   ├── satori-desktop/debian/
 │   ├── satori-config/{debian/,files/}
 │   ├── satori-branding/{debian/,files/}
+│   ├── satori-apt-sources/{debian/,keys/,sources/,preferences/}
 │   └── satori-installer/{debian/,src/}
 ├── branding/                      # source assets (SVG etc.) → rendered into satori-branding
 ├── scripts/
@@ -209,7 +213,10 @@ Each phase is one or more small commits and ends only when every one of its crit
 **Phase 2: Desktop stack**
 - `satori-desktop` and `satori-config` packages. The live session autologs in and starts herbstluftwm.
 - ✅ The live session reaches herbstluftwm with the bar, launcher, notifications, network applet, and working audio (manual check in QEMU, plus on at least one real laptop).
-- ✅ Every added package passes the no-systemd check. Any substitutions are documented in docs/desktop-stack.md.
+- ✅ Every added package passes the no-systemd check, including those from third-party repositories. Any substitutions are documented in docs/desktop-stack.md.
+- ✅ Third-party repositories are restricted by their pins: `apt-cache policy` shows no Devuan package replaced by a Brave or XLibre package.
+- ✅ Brave Origin is the default browser, and it saves and recalls a password through gnome-keyring without an extra unlock prompt.
+- ✅ `satori-get-melia` installs Melia, and it refuses a download whose signature or checksum is wrong.
 
 **Phase 3: Installer**
 - `satori-installer` (and `gum` if it has to be vendored).

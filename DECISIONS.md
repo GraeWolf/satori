@@ -66,10 +66,11 @@ When a decision changes, edit the entry in place and add a dated line to its
 - See [SPEC.md §4](SPEC.md#4-the-no-systemd-rule). `libsystemd0` (and anything else that turns out to be unavoidable) is allowed only through a commented allowlist entry.
 - **History:** 2026-09-28 decided.
 
-### DEC-011 Networking: NetworkManager + nm-applet
+### DEC-011 Networking: NetworkManager (nmcli/nmtui)
 - **Status:** Decided
 - **Why:** Best Wi-Fi/VPN coverage and works under Devuan with elogind. `nmcli`/`nmtui` suit the audience. connman and ifupdown are weaker on laptops.
-- **History:** 2026-09-28 proposed and confirmed.
+- **UI:** No tray applet. Wi-Fi is managed with `nmtui`/`nmcli`, and clicking polybar's network module opens `nmtui`.
+- **History:** 2026-09-28 proposed and confirmed. Same day, the maintainer dropped `nm-applet` in favour of `nmtui` only.
 
 ### DEC-012 Audio: PipeWire (pipewire-pulse, WirePlumber)
 - **Status:** Decided, to be verified in Phase 2
@@ -144,8 +145,9 @@ When a decision changes, edit the entry in place and add a dated line to its
   - No services listen on the network by default, and there's no SSH server.
   - No `popularity-contest`.
   - Firefox ESR policies turn off telemetry, studies, and sponsored content.
+  - Brave Origin already strips most telemetry. Phase 2 checks what remains and switches it off with Chromium managed policies in `/etc/brave/policies/managed/`, if any is needed.
   - NetworkManager uses randomised MAC addresses when scanning Wi-Fi.
-- **History:** 2026-09-28 recorded (previously only in SPEC.md §3.6).
+- **History:** 2026-09-28 recorded (previously only in SPEC.md §3.6). Same day, added the Brave Origin policy check (DEC-028).
 
 ### DEC-024 Time sync: chrony
 - **Status:** Decided
@@ -153,6 +155,59 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-28 recorded (previously only in docs/desktop-stack.md).
 
 ### DEC-025 Desktop component selection
-- **Status:** Proposed. The maintainer plans to revise [docs/desktop-stack.md](docs/desktop-stack.md).
-- The component table in docs/desktop-stack.md §1 is the source of truth. This entry covers the choices not recorded elsewhere, such as the bar, launcher, notifications, compositor, lock screen, terminal, file manager, and apps.
-- **History:** 2026-09-28 recorded as Proposed.
+- **Status:** Decided. Each package still has to be verified in Phase 2 (it must exist in Excalibur and pass the no-systemd rule).
+- The component table and keybindings in [docs/desktop-stack.md](docs/desktop-stack.md) are the source of truth. This entry covers the choices not recorded elsewhere, such as the bar, launcher, notifications, compositor, lock screen, terminal, file manager, editor, and keybindings.
+- **Risk:** `nautilus` brings in a large GNOME dependency tree, including a file indexer whose systemd-free status is unverified.
+- **History:** 2026-09-28 recorded as Proposed. Same day, the maintainer revised it (XLibre, nautilus, neovim, no nm-applet, new keybindings) and it was marked Decided.
+
+### DEC-026 Third-party APT repositories
+- **Status:** Decided
+- **Policy:** An outside repository (anything other than Devuan's) is allowed only if all of these hold:
+  1. Its signing key is stored in this repo, and the build checks it against a recorded SHA-256 checksum.
+  2. Its `.sources` entry uses `Signed-By:` for that key alone and ships in the `satori-apt-sources` package, not as a loose file. It stays enabled on installed systems, so they receive updates.
+  3. An `/etc/apt/preferences.d/` pin restricts it to the packages we want from it. Everything else from it gets priority -1, so it can't replace Devuan packages.
+  4. Its packages pass the no-systemd rule (SPEC §4), like any other package.
+- **Current repositories:**
+  - Brave (for `brave-origin*`, DEC-028)
+  - XLibre for Devuan (for `xlibre*`/`xserver-xlibre*`, DEC-027)
+  - Devuan `excalibur-backports`. It's a Devuan repository, but it's pinned to the packages XLibre needs.
+- **Why:** Some chosen components aren't in Devuan stable. This doesn't conflict with DEC-006, which is about satori hosting its *own* repository.
+- **History:** 2026-09-28 decided.
+
+### DEC-027 X server: XLibre
+- **Status:** Decided, to be verified in Phase 2
+- **Why:** This is the maintainer's choice. XLibre is an actively developed fork of the Xorg server. It has dropped its libsystemd dependency, and the Devuan project publicly supports it.
+- **Source:** The XLibre Devuan repository (`xlibre-debian.github.io/devuan`), which needs Excalibur backports. Its packages are signed by an individual volunteer's key (DEC-026 applies). Devuan maintainers are working on first-party packages. Switch to those when they reach Devuan stable.
+- **Risks:**
+  - It depends on a volunteer-run repository.
+  - Compatibility with the proprietary NVIDIA driver is undocumented.
+  - The fallback is Devuan's `xserver-xorg`, a package-list change only.
+- **History:** 2026-09-28 decided (maintainer edit to desktop-stack.md).
+
+### DEC-028 Browsers: Brave Origin (default) + Firefox ESR (fallback)
+- **Status:** Decided
+- **Why:**
+  - Brave Origin is Brave without AI, crypto, VPN, Rewards, Tor and most telemetry, and it's free on Linux.
+  - Firefox ESR comes from Devuan's own repositories. It stays as a fallback that doesn't depend on an outside repository.
+- **Source:** `brave-origin` from Brave's official APT repository (DEC-026). Brave's stable channel only, never beta or nightly.
+- **Default:** Set through the `x-www-browser` alternative and `mimeapps.list` in `/etc/skel` (shipped by satori-config).
+- **History:** 2026-09-28 decided.
+
+### DEC-029 Melia: install on demand, not bundled
+- **Status:** Decided
+- **Why:**
+  - Melia is proprietary, closed-source, maintained by one person, and paid beyond one account.
+  - Its redistribution terms don't clearly allow bundling it in an ISO.
+  - It updates itself from inside the app, bypassing dpkg.
+- **Design:**
+  - `satori-config` ships `satori-get-melia`. It downloads the current `.deb` and signed `SHA256SUMS` from the project's GitHub releases.
+  - It checks the signature against a key fingerprint stored in the package, then checks the checksum, then installs the `.deb` with `apt`.
+  - A first-run notice or the keybinding cheatsheet mentions it.
+- **Revisit if:** the author grants redistribution permission in writing, or publishes an APT repository.
+- **History:** 2026-09-28 decided.
+
+### DEC-030 Secret Service: gnome-keyring
+- **Status:** Decided
+- **Why:** Brave, Melia, Firefox and NetworkManager all store credentials through the Secret Service API. herbstluftwm provides none.
+- **Design:** `gnome-keyring` plus `libpam-gnome-keyring` unlocks the keyring with the login password at tty1. `.xinitrc` starts the secrets component inside the session's D-Bus. It must be verified in Phase 2 that this works with elogind and `startx`.
+- **History:** 2026-09-28 decided.
