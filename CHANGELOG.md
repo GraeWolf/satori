@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## 0.1-rc1 (2026-09-29)
 
 First release candidate: the build system, desktop and installer (Phases 1-3).

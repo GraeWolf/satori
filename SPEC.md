@@ -234,7 +234,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ Hibernate and resume work in QEMU for all four install cases: `tests/smoke/install.py` hibernates each installed system and checks that the same session resumes. On real hardware too, with and without LUKS (DEC-017).
 - ✅ On an installed system, Brave Origin saves and recalls a password through gnome-keyring without an extra unlock prompt (DEC-030). Moved from Phase 2: the live session autologins, so PAM has no password to unlock the keyring with.
 
-**Release candidate gate (`v0.1-rc1`): before installing on the development laptop**
+**Release candidate gate (`v0.1-rc1`): before installing on the development laptop**. The first three criteria pass as of 2026-09-29. `v0.1-rc1` (`c77c411`) built clean; the upgrade test moved an installed system from `0.1~dev20` to `0.1~rc1`; live-boot and all four install cases pass. The maintainer's three criteria are pending.
 - The only laptop is also the development machine, and the installer erases the whole disk. So these must pass before satori is installed there. Phases 4–6 then continue on the installed system.
 - ✅ Package versions increase with every build (DEC-032), and `tests/smoke/upgrade.py` upgrades an installed system from one build's packages to the next and re-runs the installed-system checks. That's how changes reach the laptop while dogfooding (DEC-006).
 - ✅ One documented command installs everything needed to build and test satori on satori (DEC-033).
