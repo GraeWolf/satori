@@ -11,13 +11,17 @@ out/satori-*-amd64.iso (SPEC.md §5.2, docs/installer.md §6). For each case:
      make the live system run satori-install unattended, then power off.
   2. Boot the installed disk, type the LUKS passphrase if needed, log in over
      serial, and run installed-checks.sh (also passed via fw_cfg) as root.
-  3. Compare its output with what the answers file asked for.
+  3. Hibernate (DEC-017): write a random token to /dev/shm (RAM only), run
+     "loginctl hibernate", start the VM again from the same disk, and check
+     the same shell session still has the token. A cold boot would lose both.
+  4. Compare the results with what the answers file asked for.
 
 Everything runs in virtual machines; nothing touches the host's disks. Work
 files go to out/install-test/<case>/ and are deleted after a pass unless
 --keep is given. Exits non-zero if any case fails.
 """
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -33,6 +37,7 @@ WORK = os.path.join(OUT, "install-test")
 MEMORY_MIB = 2048          # the swapfile is sized to RAM: 2 GiB
 DISK_SIZE = "24G"          # installer minimum: 20 GiB + swapfile
 INSTALL_TIMEOUT = 2400
+HIBERNATE_TIMEOUT = 180
 BOOT_TIMEOUT = 300
 CMD_TIMEOUT = 120
 
@@ -64,6 +69,7 @@ def expected(mode, luks):
         "LANG": ANSWERS["LOCALE"], "KEYMAP": ANSWERS["KEYMAP"],
         "ROOT_PASSWORD": "L", "FIREWALL": "loaded",
         "GRUB_PKG": "grub-efi-amd64" if mode == "uefi" else "grub-pc",
+        "HIBERNATE": "resumed",
     }
 
 
@@ -115,12 +121,57 @@ def boot_and_check(mode, luks, disk, vars_path, workdir):
             con.send(f"echo {password} | sudo -S -p '' {check}\n")
             con.expect(BEGIN, CMD_TIMEOUT)
             output = con.expect(END, CMD_TIMEOUT)
-            con.send(f"echo {password} | sudo -S -p '' poweroff\n")
+            con.expect("$ ", CMD_TIMEOUT)
+            results = dict(line.strip().split("=", 1) for line in output.splitlines() if "=" in line)
+
+            # Hibernate: the VM powers itself off once the image is written.
+            token = secrets.token_hex(8)
+            con.send(f"echo {token} > /dev/shm/satori-hibernate-test; "
+                     f"echo {password} | sudo -S -p '' loginctl hibernate\n")
+            try:
+                proc.wait(timeout=HIBERNATE_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                results["HIBERNATE"] = "didn't power off"
+                con.send(f"echo {password} | sudo -S -p '' poweroff\n")
+                stop(proc, CMD_TIMEOUT)
+                return results
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+
+    # Resume: same disk and UEFI variables; the LUKS prompt comes first.
+    with open(os.path.join(workdir, "serial-resume.log"), "w") as log:
+        proc = start(cmd)
+        con = Serial(proc, log)
+        try:
+            if luks:
+                con.expect("unlock disk", BOOT_TIMEOUT)
+                con.send(ANSWERS["LUKS_PASSPHRASE"] + "\n")
+            # Resuming restores the logged-in shell; a cold boot shows "login:".
+            # Keystrokes typed while the console is still being restored get
+            # lost, so press Enter until a prompt answers before typing.
+            deadline = time.monotonic() + BOOT_TIMEOUT
+            seen = None
+            while seen is None:
+                if time.monotonic() > deadline:
+                    raise TimeoutError(f"no shell or login prompt {BOOT_TIMEOUT}s after resume started")
+                con.send("\n")
+                try:
+                    seen = con.expect_any(["$ ", "login:"], 5)
+                except TimeoutError:
+                    pass
+            if seen == "$ ":
+                con.expect("$ ", CMD_TIMEOUT)
+                con.send("cat /dev/shm/satori-hibernate-test\n")
+                seen = con.expect_any([token, "login:", "No such file"], CMD_TIMEOUT)
+            results["HIBERNATE"] = "resumed" if seen == token else "cold boot (resume failed)"
+            if seen == token:
+                con.send(f"echo {password} | sudo -S -p '' poweroff\n")
             stop(proc, CMD_TIMEOUT)
         finally:
             if proc.poll() is None:
                 proc.kill()
-    return dict(line.strip().split("=", 1) for line in output.splitlines() if "=" in line)
+    return results
 
 
 def run_case(mode, luks, iso, keep):
@@ -156,7 +207,7 @@ def run_case(mode, luks, iso, keep):
     if "sudo" not in results.get("USER_GROUPS", "").split(","):
         problems.append(f"user isn't in the sudo group ({results.get('USER_GROUPS')})")
 
-    print(f"[{name}] installed in {installed - started:.0f}s, booted and checked in {time.monotonic() - installed:.0f}s")
+    print(f"[{name}] installed in {installed - started:.0f}s; booted, checked, hibernated and resumed in {time.monotonic() - installed:.0f}s")
     for problem in problems:
         print(f"[{name}]   {problem}")
     ok = not problems

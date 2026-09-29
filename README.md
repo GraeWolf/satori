@@ -39,8 +39,13 @@ The build fails if the package manifest breaks the no-systemd rule
 Needs `qemu-system-x86` and `ovmf` on the host.
 
 ```sh
-tests/smoke/live-boot.py          # headless boot on SeaBIOS and OVMF, checks PID 1 is sysvinit
-scripts/test-in-qemu.sh uefi      # boot the newest ISO in a QEMU window
+tests/smoke/live-boot.py                  # live ISO on SeaBIOS and OVMF: sysvinit, desktop, firewall
+tests/smoke/install.py                    # unattended installs {BIOS,UEFI} x {plain,LUKS}, each
+                                          # booted, checked, hibernated and resumed (~15 min)
+scripts/test-in-qemu.sh uefi              # the newest ISO in a QEMU window
+scripts/test-in-qemu.sh uefi --disk       # ...with a blank 32 GiB virtual disk: sudo satori-install
+scripts/test-in-qemu.sh uefi --installed  # boot that virtual disk after installing
 ```
 
-The live user is `user`, password `live`.
+The live user is `user`, password `live`. All testing happens in virtual machines;
+only files under `out/` are written on the host.

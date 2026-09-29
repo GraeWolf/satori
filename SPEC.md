@@ -228,8 +228,9 @@ Each phase is one or more small commits and ends only when every one of its crit
 **Phase 3: Installer**
 - `satori-installer` (using Excalibur's `gum` package, DEC-021).
 - ✅ All four unattended install-matrix runs pass (§5.2).
+- ✅ An interactive install in QEMU (`scripts/test-in-qemu.sh --disk`) completes and the installed system boots to the desktop.
 - ✅ An interactive install on real hardware, with LUKS, boots and passes the manual checklist. This includes the Phase 2 desktop checks deferred from QEMU: Wi-Fi, audio, brightness keys, suspend and the lock screen.
-- ✅ Hibernate and resume work on real hardware, with and without LUKS (DEC-017).
+- ✅ Hibernate and resume work in QEMU for all four install cases: `tests/smoke/install.py` hibernates each installed system and checks that the same session resumes. On real hardware too, with and without LUKS (DEC-017).
 - ✅ On an installed system, Brave Origin saves and recalls a password through gnome-keyring without an extra unlock prompt (DEC-030). Moved from Phase 2: the live session autologins, so PAM has no password to unlock the keyring with.
 
 **Phase 4: Branding**
