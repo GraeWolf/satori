@@ -216,7 +216,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ `scripts/build.sh` on a clean checkout produces an ISO without manual steps.
 - ✅ An automated live boot test (BIOS and UEFI) plus the systemd runtime check pass.
 
-**Phase 2: Desktop stack**
+**Phase 2: Desktop stack**. ✔ Complete (2026-09-29). Smoke tests pass on BIOS and UEFI, and the maintainer checked the launcher, audio, network and browser by hand in QEMU. The real-laptop check is deferred to Phase 3's first install on real hardware: the only laptop is the development machine, which gets satori once there's a stable release candidate.
 - `satori-desktop` and `satori-config` packages. The live session autologs in and starts herbstluftwm.
 - ✅ The live session reaches herbstluftwm with the bar, launcher, notifications, the bar's network module (DEC-011), and working audio. `tests/smoke/live-boot.py` checks that every session process is running. Launcher, audio and network are checked by hand in QEMU and on at least one real laptop.
 - ✅ Every added package passes the no-systemd check, including those from third-party repositories. Any substitutions are documented in docs/desktop-stack.md.
@@ -228,7 +228,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 **Phase 3: Installer**
 - `satori-installer` (using Excalibur's `gum` package, DEC-021).
 - ✅ All four unattended install-matrix runs pass (§5.2).
-- ✅ An interactive install on real hardware, with LUKS, boots and passes the manual checklist.
+- ✅ An interactive install on real hardware, with LUKS, boots and passes the manual checklist. This includes the Phase 2 desktop checks deferred from QEMU: Wi-Fi, audio, brightness keys, suspend and the lock screen.
 - ✅ Hibernate and resume work on real hardware, with and without LUKS (DEC-017).
 - ✅ On an installed system, Brave Origin saves and recalls a password through gnome-keyring without an extra unlock prompt (DEC-030). Moved from Phase 2: the live session autologins, so PAM has no password to unlock the keyring with.
 

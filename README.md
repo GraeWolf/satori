@@ -4,8 +4,8 @@ A systemd-free desktop respin of Devuan Excalibur: herbstluftwm on X11 and a
 keyboard-driven installer. See [SPEC.md](SPEC.md) for what's planned and
 [DECISIONS.md](DECISIONS.md) for why. Licensed GPL-3.0-or-later.
 
-**Status:** Phase 1 (build system) is complete. The ISO is currently a
-console-only live system; the desktop arrives in Phase 2.
+**Status:** Phase 2 (desktop) is complete. The live ISO boots to the
+herbstluftwm desktop; the installer arrives in Phase 3.
 
 ## Build
 
