@@ -255,17 +255,17 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-28 decided (Phase 1).
 
 ### DEC-032 Package versions increase with every build
-- **Status:** Proposed
+- **Status:** Decided
 - **Why:** Installed systems get satori updates by installing newer `.deb`s from `out/packages/` (DEC-006). APT only upgrades to a higher version, and every build used to produce version `0.1`.
 - **Scheme:** `scripts/build.sh` derives the package version from `VERSION` and git; `scripts/build-packages.sh` stamps it into each package's changelog at build time.
   - A clean checkout of tag `v<VERSION>` gets `VERSION` itself, with `-` turned into `~` (`0.1-rc1` becomes `0.1~rc1`, which Debian sorts before `0.1`).
   - Any other build gets `<that>~dev<commit count>.g<short commit>`, e.g. `0.1~rc1~dev131.gb996478`. The commit count rises on every commit, so later builds sort higher, and every dev build sorts before the release it leads to.
   - After tagging a release, bump `VERSION` to the next one (e.g. `0.1-rc2`), so later dev builds sort above the tag.
   - Dirty-tree builds get the same version as their commit; `build-info.txt` records `git_dirty`.
-- **History:** 2026-09-29 proposed (release candidate gate).
+- **History:** 2026-09-29 proposed (release candidate gate). Same day, confirmed by the maintainer after it carried the first update of the installed laptop from `0.1~rc1` to `0.1~rc2~dev22`.
 
 ### DEC-033 Developer tools: documented install, not in the ISO
-- **Status:** Proposed
+- **Status:** Decided
 - **Why:** Building and testing satori needs `git`, `podman`, QEMU and OVMF. Putting them in the ISO would push it towards GitHub's 2 GiB asset limit (DEC-020) and burden users who never build satori. This replaces SPEC's original optional `developer.list.chroot`, which was never built.
 - **Design:** The README gives one `apt install` command, using Devuan packages only. On an installed satori it's all that's needed to run `scripts/build.sh` and the smoke tests.
-- **History:** 2026-09-29 proposed (release candidate gate).
+- **History:** 2026-09-29 proposed (release candidate gate). Same day, confirmed by the maintainer after building satori on the installed laptop with the README command.
