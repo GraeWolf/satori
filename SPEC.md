@@ -225,7 +225,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ The DEC-023 security defaults are in place: `tests/smoke/live-boot.py` checks that satori's firewall is loaded and that nothing listens beyond loopback; the browser and NetworkManager policy files are installed.
 - ✅ `satori-get-melia` installs Melia, and it refuses a download whose signature or checksum is wrong.
 
-**Phase 3: Installer**
+**Phase 3: Installer**. ✔ Complete (2026-09-29). All four unattended installs pass with hibernate/resume in QEMU, and the maintainer completed an interactive install and the keyring test in QEMU. Deferred to the first real-hardware install (the release candidate on the development laptop): the interactive install on real hardware with LUKS, the Phase 2 laptop checks, and hibernate/resume on real hardware.
 - `satori-installer` (using Excalibur's `gum` package, DEC-021).
 - ✅ All four unattended install-matrix runs pass (§5.2).
 - ✅ An interactive install in QEMU (`scripts/test-in-qemu.sh --disk`) completes and the installed system boots to the desktop.

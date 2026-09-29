@@ -4,8 +4,9 @@ A systemd-free desktop respin of Devuan Excalibur: herbstluftwm on X11 and a
 keyboard-driven installer. See [SPEC.md](SPEC.md) for what's planned and
 [DECISIONS.md](DECISIONS.md) for why. Licensed GPL-3.0-or-later.
 
-**Status:** Phase 2 (desktop) is complete. The live ISO boots to the
-herbstluftwm desktop; the installer arrives in Phase 3.
+**Status:** Phase 3 (installer) is complete. The live ISO boots to the
+herbstluftwm desktop and installs with `sudo satori-install`; branding
+arrives in Phase 4.
 
 ## Build
 
