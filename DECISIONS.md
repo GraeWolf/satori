@@ -90,10 +90,10 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-28 proposed and confirmed. Same day, the maintainer dropped `nm-applet` in favour of `nmtui` only.
 
 ### DEC-012 Audio: PipeWire (pipewire-pulse, WirePlumber)
-- **Status:** Decided, to be verified in Phase 2
+- **Status:** Decided, verified on real hardware
 - **Why:** It's the Trixie-era default. Without systemd user units, the X session starts it from autostart ([docs/desktop-stack.md](docs/desktop-stack.md) §2).
 - **Risk:** This is the component most likely to misbehave without systemd. Phase 2 has to confirm it works on real hardware.
-- **History:** 2026-09-28 proposed and confirmed.
+- **History:** 2026-09-28 proposed and confirmed. 2026-09-29: verified in QEMU (Phase 2) and on the development laptop (speakers, headphones, microphone, volume keys).
 
 ### DEC-013 Include non-free firmware
 - **Status:** Decided
@@ -126,8 +126,8 @@ When a decision changes, edit the entry in place and add a dated line to its
   - Resume: the installer puts `resume=UUID=<root fs UUID> resume_offset=<swapfile physical offset>` (offset from `filefrag -v`) on the kernel command line via `GRUB_CMDLINE_LINUX`. initramfs-tools reads `resume_offset` only from the kernel command line. `/etc/initramfs-tools/conf.d/resume` gets `RESUME=UUID=…` so the resume hook is included. The initramfs unlocks LUKS before it tries to resume, so one passphrase prompt covers both.
   - Trigger: `loginctl hibernate` (elogind), bound in the rofi power menu. The lid close action stays suspend.
 - **Constraints:** The swapfile must not be recreated or moved without updating `resume_offset`. `satori-config` ships `satori-swap-resize SIZE_GIB`, which recreates the swapfile, updates `/etc/default/grub` and runs `update-grub`, and writes `/sys/power/resume_offset` so hibernation works before the next reboot. Hibernation is incompatible with Secure Boot lockdown (DEC-016).
-- **Acceptance:** Phase 3 adds a hibernate/resume round trip to the manual hardware checklist, both with and without LUKS.
-- **History:** 2026-09-28 proposed as "swapfile, no hibernation". Changed the same day by the maintainer to support hibernation. 2026-09-29 (Phase 3): corrected the resume mechanism. `RESUME_OFFSET` in `conf.d` is not read by initramfs-tools; the offset goes on the kernel command line.
+- **Acceptance:** `tests/smoke/install.py` hibernates and resumes all four install cases in QEMU. On real hardware it passed with LUKS on the development laptop (2026-09-29); without LUKS it's untested on real hardware.
+- **History:** 2026-09-28 proposed as "swapfile, no hibernation". Changed the same day by the maintainer to support hibernation. 2026-09-29 (Phase 3): corrected the resume mechanism. `RESUME_OFFSET` in `conf.d` is not read by initramfs-tools; the offset goes on the kernel command line. Same day, hibernate/resume passed on real hardware with LUKS.
 
 ### DEC-018 Filesystem: ext4
 - **Status:** Decided
@@ -177,9 +177,9 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-28 recorded (previously only in docs/desktop-stack.md).
 
 ### DEC-025 Desktop component selection
-- **Status:** Decided. Each package still has to be verified in Phase 2 (it must exist in Excalibur and pass the no-systemd rule).
+- **Status:** Decided. Phase 2 verified every package: each exists in Excalibur (or a DEC-026 repository) and passes the no-systemd rule.
 - The component table and keybindings in [docs/desktop-stack.md](docs/desktop-stack.md) are the source of truth. This entry covers the choices not recorded elsewhere, such as the bar, launcher, notifications, compositor, lock screen, terminal, file manager, editor, and keybindings.
-- **History:** 2026-09-28 recorded as Proposed. Same day, the maintainer revised it (XLibre, nautilus, neovim, no nm-applet, new keybindings) and it was marked Decided. Same day, the file manager was reverted from nautilus to thunar, to avoid nautilus's large GNOME dependency tree and its file indexer. Same day (Phase 2), the maintainer chose CopyQ to replace `clipmenu`, which isn't packaged in Excalibur.
+- **History:** 2026-09-28 recorded as Proposed. Same day, the maintainer revised it (XLibre, nautilus, neovim, no nm-applet, new keybindings) and it was marked Decided. Same day, the file manager was reverted from nautilus to thunar, to avoid nautilus's large GNOME dependency tree and its file indexer. Same day (Phase 2), the maintainer chose CopyQ to replace `clipmenu`, which isn't packaged in Excalibur. 2026-09-29: the Phase 2 package check is complete (see docs/desktop-stack.md).
 
 ### DEC-026 Third-party APT repositories
 - **Status:** Decided
@@ -198,14 +198,14 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-28 decided. Same day (Phase 2), added rule 5 after finding that `brave-keyring` installs a globally trusted key, and recorded how the build applies the policy.
 
 ### DEC-027 X server: XLibre
-- **Status:** Decided, to be verified in Phase 2
+- **Status:** Decided, verified on real hardware
 - **Why:** This is the maintainer's choice. XLibre is an actively developed fork of the Xorg server. It has dropped its libsystemd dependency, and the Devuan project publicly supports it.
 - **Source:** The XLibre Devuan repository (`xlibre-debian.github.io/devuan`). XLibre's docs say Excalibur needs backports, but Phase 2 builds resolve without them. Its packages are signed by an individual volunteer's key (DEC-026 applies). Devuan maintainers are working on first-party packages. Switch to those when they reach Devuan stable.
 - **Risks:**
   - It depends on a volunteer-run repository.
   - Compatibility with the proprietary NVIDIA driver is undocumented.
   - The fallback is Devuan's `xserver-xorg`, a package-list change only.
-- **History:** 2026-09-28 decided (maintainer edit to desktop-stack.md).
+- **History:** 2026-09-28 decided (maintainer edit to desktop-stack.md). 2026-09-29: verified on the development laptop (AMD GPU on the internal and an external display, with the NVIDIA GPU on `nouveau`).
 
 ### DEC-028 Browsers: Brave Origin (default) + Firefox ESR (fallback)
 - **Status:** Decided

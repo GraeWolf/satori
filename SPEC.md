@@ -121,7 +121,7 @@ fails the build.
 ```
 sudo scripts/build.sh       # builds container → builds packages/ → lb config/build → no-systemd check
 ```
-The version comes from the `VERSION` file. A clean checkout of tag `v<VERSION>` builds as `<VERSION>`; anything else builds as `<VERSION>-dev.<short commit>`.
+The version comes from the `VERSION` file. A clean checkout of tag `v<VERSION>` builds as `<VERSION>`; anything else builds as `<VERSION>-dev<commit count>.<short commit>` (§5.4).
 Output goes to `out/` (git-ignored):
 - `satori-<version>-amd64.iso` and `.sha256`
 - `satori-<version>-amd64.packages`: the package manifest
@@ -175,14 +175,13 @@ satori/
 │       ├── packages.chroot/       # generated: satori-*.deb (git-ignored)
 │       ├── bootloaders/grub-pc/   # GRUB menu for BIOS and UEFI, incl. the serial test entry
 │       ├── includes.chroot/       # live-session-only overlays
-│       ├── includes.binary/
 │       └── hooks/{normal,live}/
 ├── packages/
 │   ├── satori-desktop/debian/
 │   ├── satori-config/{debian/,files/}
 │   ├── satori-branding/{debian/,files/}
 │   ├── satori-apt-sources/{debian/,keys/,sources/,preferences/}
-│   └── satori-installer/{debian/,src/}
+│   └── satori-installer/{debian/,files/}
 ├── branding/                      # source assets (SVG etc.) → rendered into satori-branding
 ├── scripts/
 │   ├── build.sh                   # host side: container build + run (needs root)
@@ -217,7 +216,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ `scripts/build.sh` on a clean checkout produces an ISO without manual steps.
 - ✅ An automated live boot test (BIOS and UEFI) plus the systemd runtime check pass.
 
-**Phase 2: Desktop stack**. ✔ Complete (2026-09-29). Smoke tests pass on BIOS and UEFI, and the maintainer checked the launcher, audio, network and browser by hand in QEMU. The real-laptop check is deferred to Phase 3's first install on real hardware: the only laptop is the development machine, which gets satori once there's a stable release candidate.
+**Phase 2: Desktop stack**. ✔ Complete (2026-09-29). Smoke tests pass on BIOS and UEFI, and the maintainer checked the launcher, audio, network and browser by hand in QEMU. The real-laptop checks passed on the development laptop after the `v0.1-rc1` install (2026-09-29), apart from a missing battery indicator, fixed for rc2.
 - `satori-desktop` and `satori-config` packages. The live session autologs in and starts herbstluftwm.
 - ✅ The live session reaches herbstluftwm with the bar, launcher, notifications, the bar's network module (DEC-011), and working audio. `tests/smoke/live-boot.py` checks that every session process is running. Launcher, audio and network are checked by hand in QEMU and on at least one real laptop.
 - ✅ Every added package passes the no-systemd check, including those from third-party repositories. Any substitutions are documented in docs/desktop-stack.md.
@@ -226,7 +225,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ The DEC-023 security defaults are in place: `tests/smoke/live-boot.py` checks that satori's firewall is loaded and that nothing listens beyond loopback; the browser and NetworkManager policy files are installed.
 - ✅ `satori-get-melia` installs Melia, and it refuses a download whose signature or checksum is wrong.
 
-**Phase 3: Installer**. ✔ Complete (2026-09-29). All four unattended installs pass with hibernate/resume in QEMU, and the maintainer completed an interactive install and the keyring test in QEMU. Deferred to the first real-hardware install (the release candidate on the development laptop): the interactive install on real hardware with LUKS, the Phase 2 laptop checks, and hibernate/resume on real hardware.
+**Phase 3: Installer**. ✔ Complete (2026-09-29). All four unattended installs pass with hibernate/resume in QEMU, and the maintainer completed an interactive install and the keyring test in QEMU. On real hardware (2026-09-29): the maintainer installed `v0.1-rc1` interactively with LUKS on the development laptop, and it passed the manual checklist, the Phase 2 laptop checks and hibernate/resume. Hibernate/resume without LUKS is checked in QEMU only: the only laptop is encrypted.
 - `satori-installer` (using Excalibur's `gum` package, DEC-021).
 - ✅ All four unattended install-matrix runs pass (§5.2).
 - ✅ An interactive install in QEMU (`scripts/test-in-qemu.sh --disk`) completes and the installed system boots to the desktop.
@@ -234,7 +233,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ Hibernate and resume work in QEMU for all four install cases: `tests/smoke/install.py` hibernates each installed system and checks that the same session resumes. On real hardware too, with and without LUKS (DEC-017).
 - ✅ On an installed system, Brave Origin saves and recalls a password through gnome-keyring without an extra unlock prompt (DEC-030). Moved from Phase 2: the live session autologins, so PAM has no password to unlock the keyring with.
 
-**Release candidate gate (`v0.1-rc1`): before installing on the development laptop**. The first three criteria pass as of 2026-09-29. `v0.1-rc1` (`c77c411`) built clean; the upgrade test moved an installed system from `0.1~dev20` to `0.1~rc1`; live-boot and all four install cases pass. The maintainer's three criteria are pending.
+**Release candidate gate (`v0.1-rc1`): before installing on the development laptop**. ✔ Passed (2026-09-29). `v0.1-rc1` (`c77c411`) built clean; the upgrade test moved an installed system from `0.1~dev20` to `0.1~rc1`; live-boot and all four install cases pass. The maintainer pushed the repository, backed up the laptop, disabled Secure Boot, and passed the live-USB hardware check, including the hybrid NVIDIA GPU with `nouveau` loaded (so satori doesn't blacklist it). satori `0.1-rc1` is installed on the development laptop, and Phases 4–6 continue there.
 - The only laptop is also the development machine, and the installer erases the whole disk. So these must pass before satori is installed there. Phases 4–6 then continue on the installed system.
 - ✅ Package versions increase with every build (DEC-032), and `tests/smoke/upgrade.py` upgrades an installed system from one build's packages to the next and re-runs the installed-system checks. That's how changes reach the laptop while dogfooding (DEC-006).
 - ✅ One documented command installs everything needed to build and test satori on satori (DEC-033).

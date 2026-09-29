@@ -71,8 +71,8 @@ initramfs) is needed.
 
 ## 5. UX rules
 
-- Every screen shows the step number (for example "Step 3/6"), and `Esc` goes back until the confirmation step.
-- No destructive action happens before step 6.
+- Every prompt screen shows its step number (for example "step 3/5"), and `Esc` goes back until the confirmation step.
+- No destructive action happens before the confirmation (§2 step 6).
 - Messages are short and technical. No wizard fluff.
 
 ## 6. Unattended mode (for tests)
@@ -102,9 +102,9 @@ virtual disks. It then boots each installed disk, logs in over serial, and runs
 - The no-systemd runtime check passes.
 - The user can `sudo`.
 - `lsblk` shows the expected layout.
-- `/etc/initramfs-tools/conf.d/resume` matches the swapfile's current offset. Hibernate/resume itself is verified manually on real hardware (SPEC §7, Phase 3).
 - No live-* packages remain.
-
 - Hostname, timezone, locale and keyboard match the answers file; root is locked; the user is in `sudo`.
 - satori's firewall is loaded, and the right GRUB package is installed.
 - The swapfile is active and RAM-sized, and the kernel's `resume=`/`resume_offset=` match the root filesystem and swapfile.
+
+Then it hibernates each installed system with `loginctl hibernate`, boots the disk again, and checks that the same session resumed (a token written to `/dev/shm` before hibernating is still there).
