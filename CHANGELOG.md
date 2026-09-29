@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1-rc1 (2026-09-29)
+
+First release candidate: the build system, desktop and installer (Phases 1-3).
+Real-hardware checks happen before it's installed on the development laptop
+(release candidate gate, SPEC §7).
 
 ### Added
 - Build system (Phase 1): `scripts/build.sh` builds a hybrid BIOS/UEFI Devuan
