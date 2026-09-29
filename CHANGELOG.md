@@ -29,6 +29,10 @@
 - `tests/smoke/install.py`: unattended {BIOS, UEFI} × {plain, LUKS} installs in
   QEMU, each booted and checked. Answers reach the VM through QEMU fw_cfg, so
   automated installs can't run on real hardware.
+- Package versions rise with every build (DEC-032), so an installed system
+  upgrades with `apt install ./out/packages/...`; `tests/smoke/upgrade.py`
+  tests it. `scripts/build.sh --packages-only` builds just the `.deb`s.
+- README: one command installs the tools to build satori on satori (DEC-033).
 
 ### Fixed
 - Installer: the timezone and keyboard steps showed only a few matches,

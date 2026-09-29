@@ -11,10 +11,11 @@ arrives in Phase 4.
 ## Build
 
 Needs a Linux host with Podman (or Docker) and root. Everything else runs inside
-the pinned Devuan build container.
+the pinned Devuan build container. On satori (or any Devuan/Debian host), this
+installs everything needed to build and test it (DEC-033):
 
 ```sh
-sudo apt install podman
+sudo apt install git podman qemu-system-x86 qemu-utils ovmf python3
 sudo scripts/build.sh
 ```
 
@@ -28,8 +29,9 @@ Outputs in `out/`:
 | `build-info.txt` | Git commit, build image, live-build version, ISO size |
 | `build.log` | Full build log |
 
-Dev builds are versioned `<VERSION>-dev.<commit>`. A clean checkout of tag
-`v<VERSION>` builds as plain `<VERSION>`. The first build downloads about
+`out/packages/` holds satori's own `.deb`s. Dev builds are versioned
+`<VERSION>-dev<commit count>.<commit>`. A clean checkout of tag `v<VERSION>`
+builds as plain `<VERSION>`. Package versions rise with every commit (DEC-032). The first build downloads about
 500 MB; later builds reuse the package cache in `out/cache/`.
 
 The build fails if the package manifest breaks the no-systemd rule
@@ -48,5 +50,18 @@ scripts/test-in-qemu.sh uefi --disk       # ...with a blank 32 GiB virtual disk:
 scripts/test-in-qemu.sh uefi --installed  # boot that virtual disk after installing
 ```
 
-The live user is `user`, password `live`. All testing happens in virtual machines;
+The live user is `user`, password `live`.
+
+## Update an installed satori
+
+Devuan packages update through APT as usual. satori's own packages come from a
+build (DEC-006):
+
+```sh
+sudo scripts/build.sh --packages-only     # about a minute
+sudo apt install ./out/packages/satori-{apt-sources,config,desktop}_*.deb
+```
+
+`tests/smoke/upgrade.py` checks this path: it upgrades a system installed from
+an earlier build and re-runs the installed-system checks. All testing happens in virtual machines;
 only files under `out/` are written on the host.

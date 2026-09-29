@@ -1,10 +1,20 @@
 #!/bin/sh
 # Build the satori ISO inside the pinned build container (container/Containerfile).
 # live-build needs chroots and mounts, so this runs a privileged container as root:
-#   sudo scripts/build.sh
+#   sudo scripts/build.sh                   packages and ISO
+#   sudo scripts/build.sh --packages-only   just satori's .debs, in out/packages/
+#                                           (about a minute; for updating an
+#                                           installed system, DEC-006)
 # Uses podman if installed, else docker; override with CONTAINER_ENGINE=docker.
 # Outputs land in out/ (SPEC.md §5.1).
 set -eu
+
+PACKAGES_ONLY=no
+case "${1:-}" in
+	"")              ;;
+	--packages-only) PACKAGES_ONLY=yes ;;
+	*)               echo "usage: $0 [--packages-only]" >&2; exit 2 ;;
+esac
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${REPO}/out"
@@ -29,10 +39,18 @@ git_() { git -c safe.directory="${REPO}" -C "${REPO}" "$@"; }
 BASE_VERSION="$(cat "${REPO}/VERSION")"
 GIT_SHA="$(git_ rev-parse HEAD)"
 if [ -n "$(git_ status --porcelain)" ]; then GIT_DIRTY=yes; else GIT_DIRTY=no; fi
-if [ "${GIT_DIRTY}" = no ] && [ "$(git_ tag --points-at HEAD)" = "v${BASE_VERSION}" ]; then
+# Versions (SPEC.md §5.4, DEC-032). Debian package versions use ~ where the
+# ISO name uses -, so that 0.1~rc1 < 0.1 and every dev build sorts before the
+# release it leads to; the commit count makes each dev build sort higher.
+DEB_BASE="$(echo "${BASE_VERSION}" | tr '-' '~')"
+if [ "${GIT_DIRTY}" = no ] && git_ tag --points-at HEAD | grep -qx "v${BASE_VERSION}"; then
 	VERSION="${BASE_VERSION}"
+	PKG_VERSION="${DEB_BASE}"
 else
-	VERSION="${BASE_VERSION}-dev.$(git_ rev-parse --short HEAD)"
+	COUNT="$(git_ rev-list --count HEAD)"
+	SHORT="$(git_ rev-parse --short HEAD)"
+	VERSION="${BASE_VERSION}-dev${COUNT}.${SHORT}"
+	PKG_VERSION="${DEB_BASE}~dev${COUNT}.g${SHORT}"
 fi
 
 echo "==> Building container image with ${ENGINE}"
@@ -47,6 +65,8 @@ status=0
 	-v "${REPO}:/src:ro" \
 	-v "${OUT}:/out" \
 	-e SATORI_VERSION="${VERSION}" \
+	-e SATORI_PKG_VERSION="${PKG_VERSION}" \
+	-e SATORI_PACKAGES_ONLY="${PACKAGES_ONLY}" \
 	-e SATORI_GIT_SHA="${GIT_SHA}" \
 	-e SATORI_GIT_DIRTY="${GIT_DIRTY}" \
 	-e SATORI_BASE_IMAGE="${BASE_IMAGE}" \
@@ -65,4 +85,8 @@ if [ "${status}" -ne 0 ]; then
 	echo "==> Build FAILED (exit ${status}); see ${OUT}/build.log" >&2
 	exit "${status}"
 fi
-echo "==> Done: ${OUT}/satori-${VERSION}-amd64.iso"
+if [ "${PACKAGES_ONLY}" = yes ]; then
+	echo "==> Done: packages ${PKG_VERSION} in ${OUT}/packages/"
+else
+	echo "==> Done: ${OUT}/satori-${VERSION}-amd64.iso"
+fi

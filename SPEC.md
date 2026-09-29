@@ -133,6 +133,7 @@ Output goes to `out/` (git-ignored):
 - `scripts/test-in-qemu.sh`: boots the ISO under SeaBIOS or OVMF in a QEMU window, for hands-on testing.
 - `tests/smoke/` automated tests, driven over the serial console. The live ISO's GRUB menu has a "serial console" entry (hotkey `s`) that sends kernel output to `ttyS0` and starts a serial login prompt. Tests press `s` at the menu; the default entry is unaffected.
   - `tests/smoke/live-boot.py`: the live image boots on BIOS and UEFI, a login prompt appears, and the no-systemd runtime check passes.
+  - `tests/smoke/upgrade.py`: upgrades a kept `install.py` system to the current build's packages, then re-runs the installed-system checks (DEC-032).
   - `tests/smoke/install.py`: install matrix, {BIOS, UEFI} × {plain, LUKS} = 4 unattended installs (answers file via QEMU fw_cfg, [docs/installer.md](docs/installer.md) §6). Each installed system must boot to a login prompt and pass `tests/smoke/installed-checks.sh`. `tests/smoke/qemu_serial.py` holds the shared QEMU and serial-console code.
 - Manual QA checklist in `docs/testing.md`, for things that are hard to automate on real hardware: Wi-Fi, audio, suspend/resume, hibernate/resume, backlight, external monitors.
 
@@ -145,6 +146,7 @@ reproducibility is a possible later goal.
 ### 5.4 Versioning and release
 - Versions follow `<major>.<minor>`, with the Devuan base in the release notes, for example "satori 0.1 (Excalibur)".
 - Git tags `v0.1` etc. Release artifacts are the ISO, its checksum, the manifest, and build-info.
+- `VERSION` holds the next release (`0.1`, `0.1-rc1`, ...). A clean checkout of tag `v<VERSION>` builds as that version. Anything else builds as `<VERSION>-dev<commit count>.<short commit>`. satori's `.deb`s get the Debian form of the same version, which always increases (DEC-032). After tagging a release, bump `VERSION` to the next one.
 - Releases are published on GitHub Releases (DEC-020). Each asset must be under 2 GiB, so the ISO size is tracked in build-info from Phase 2 on.
 - `CHANGELOG.md` is maintained from Phase 1 onward.
 
@@ -170,7 +172,6 @@ satori/
 │       ├── package-lists/
 │       │   ├── base.list.chroot
 │       │   ├── live.list.chroot   # live-only: live-boot, live-config, satori-installer
-│       │   └── developer.list.chroot
 │       ├── packages.chroot/       # generated: satori-*.deb (git-ignored)
 │       ├── bootloaders/grub-pc/   # GRUB menu for BIOS and UEFI, incl. the serial test entry
 │       ├── includes.chroot/       # live-session-only overlays
@@ -232,6 +233,15 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ An interactive install on real hardware, with LUKS, boots and passes the manual checklist. This includes the Phase 2 desktop checks deferred from QEMU: Wi-Fi, audio, brightness keys, suspend and the lock screen.
 - ✅ Hibernate and resume work in QEMU for all four install cases: `tests/smoke/install.py` hibernates each installed system and checks that the same session resumes. On real hardware too, with and without LUKS (DEC-017).
 - ✅ On an installed system, Brave Origin saves and recalls a password through gnome-keyring without an extra unlock prompt (DEC-030). Moved from Phase 2: the live session autologins, so PAM has no password to unlock the keyring with.
+
+**Release candidate gate (`v0.1-rc1`): before installing on the development laptop**
+- The only laptop is also the development machine, and the installer erases the whole disk. So these must pass before satori is installed there. Phases 4–6 then continue on the installed system.
+- ✅ Package versions increase with every build (DEC-032), and `tests/smoke/upgrade.py` upgrades an installed system from one build's packages to the next and re-runs the installed-system checks. That's how changes reach the laptop while dogfooding (DEC-006).
+- ✅ One documented command installs everything needed to build and test satori on satori (DEC-033).
+- ✅ `v0.1-rc1` is tagged and built from a clean tree, and its ISO passes `live-boot.py` and `install.py`.
+- ✅ (maintainer) The repository is pushed and the laptop is backed up.
+- ✅ (maintainer) A live-USB hardware check on the laptop passes: Wi-Fi, the AMD GPU on the internal display and an external monitor, audio, brightness keys, suspend/resume, and the hybrid NVIDIA GPU with `nouveau` loaded (boots, suspends, battery drain). If `nouveau` misbehaves, decide whether satori blacklists it.
+- ✅ (maintainer) Secure Boot is disabled in the laptop's firmware (DEC-016).
 
 **Phase 4: Branding**
 - `satori-branding`, the GRUB theme, wallpaper, and os-release diversion.

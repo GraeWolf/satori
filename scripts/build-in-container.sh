@@ -4,13 +4,17 @@
 # live-build's package cache between builds.
 set -euo pipefail
 
-: "${SATORI_VERSION:?}" "${SATORI_GIT_SHA:?}" "${SATORI_GIT_DIRTY:?}"
+: "${SATORI_VERSION:?}" "${SATORI_PKG_VERSION:?}" "${SATORI_GIT_SHA:?}" "${SATORI_GIT_DIRTY:?}"
 : "${SATORI_BASE_IMAGE:?}" "${SATORI_IMAGE_ID:?}"
 NAME="satori-${SATORI_VERSION}-amd64"
 WORK=/build
 
-rm -f /out/satori-*-amd64.* /out/build-info.txt /out/build.log
 rm -rf /out/packages
+if [ "${SATORI_PACKAGES_ONLY:-no}" = yes ]; then
+	/src/scripts/build-packages.sh /src/packages /out/packages "${SATORI_PKG_VERSION}"
+	exit 0
+fi
+rm -f /out/satori-*-amd64.* /out/build-info.txt /out/build.log
 
 rm -rf "${WORK}"
 mkdir -p "${WORK}/cache"
@@ -28,7 +32,7 @@ done
 # config/packages.chroot/ during its package-list step, before the third-party
 # repositories exist, so satori-desktop goes into the chroot as a plain file
 # instead; config/hooks/normal/0500-satori-desktop.hook.chroot installs it.
-/src/scripts/build-packages.sh /src/packages /out/packages 2>&1 | tee /out/build.log
+/src/scripts/build-packages.sh /src/packages /out/packages "${SATORI_PKG_VERSION}" 2>&1 | tee /out/build.log
 mkdir -p "${WORK}/config/packages.chroot" "${WORK}/config/includes.chroot/var/cache/satori"
 for deb in /out/packages/*.deb; do
 	case "$(basename "${deb}")" in
@@ -50,6 +54,7 @@ cp live-image-amd64.hybrid.iso "/out/${NAME}.iso"
 
 cat > /out/build-info.txt <<EOF
 version: ${SATORI_VERSION}
+package_version: ${SATORI_PKG_VERSION}
 git_sha: ${SATORI_GIT_SHA}
 git_dirty: ${SATORI_GIT_DIRTY}
 build_date: $(date -u +%Y-%m-%dT%H:%M:%SZ)

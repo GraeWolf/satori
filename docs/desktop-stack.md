@@ -41,7 +41,7 @@ and configured by `satori-config`.
 | Firewall | `nftables` + satori ruleset | DEC-023 |
 | Time sync | `chrony` | DEC-024. Must not use systemd-timesyncd |
 
-Optional `developer.list.chroot`: `git`, `build-essential`, `curl`, `jq`, `ripgrep`, `fd-find`, `tmux`, `shellcheck`.
+Developer tools aren't in the ISO (DEC-033); see the README for the one-line install.
 
 ## 2. Session startup
 
