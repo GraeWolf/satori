@@ -20,6 +20,8 @@
 - Firmware and CPU microcode for common laptop hardware.
 - `satori-get-melia`: downloads Melia and installs it only if the signature and
   checksum verify.
+- Security and privacy defaults (DEC-023): nftables firewall (`satori-firewall`),
+  Firefox ESR and Brave telemetry policies, Wi-Fi scan MAC randomisation.
 
 ### Fixed
 - Live-session autologin on Excalibur: live-config's sysvinit component never

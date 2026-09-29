@@ -8,12 +8,15 @@ Rules-Requires-Root: no
 
 Package: satori-config
 Architecture: all
-Depends: ${misc:Depends}, curl, gpgv
+Depends: ${misc:Depends}, curl, gpgv, nftables
 Description: satori desktop defaults and helper scripts
  System-wide defaults for the satori desktop: the X session
  (satori-session), herbstluftwm autostart and keybindings, polybar and picom
  configuration, and startx on tty1. Defaults live in /usr/share/satori and
  are used only when the user has no configuration of their own.
+ .
+ Security and privacy defaults: an nftables firewall (satori-firewall),
+ Firefox ESR and Brave telemetry policies, and Wi-Fi scan MAC randomisation.
  .
  Helper scripts: satori-run-once, satori-keys, satori-powermenu,
  satori-screenshot, and satori-get-melia (downloads, verifies and installs

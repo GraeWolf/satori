@@ -8,8 +8,9 @@ mode it boots the ISO, presses "s" at the GRUB menu to pick the serial-console
 entry, logs in as the live user, and checks SPEC.md §4 rule 1: PID 1 is
 sysvinit's init and /run/systemd/system doesn't exist. It then waits for the
 autologin desktop on tty1 and checks that the X server and every session
-component in DESKTOP_PROCESSES is running (Phase 2). Serial logs are written
-to out/serial-<mode>.log. Exits non-zero if any mode fails.
+component in DESKTOP_PROCESSES is running (Phase 2), that satori's firewall is
+loaded, and that nothing listens beyond loopback (DEC-023). Serial logs are
+written to out/serial-<mode>.log. Exits non-zero if any mode fails.
 """
 import glob
 import os
@@ -51,6 +52,9 @@ CHECK_CMD = (
     f'for p in {" ".join(DESKTOP_PROCESSES)}; do pgrep -x $p >/dev/null || n=1; done; '
     '[ $n = 0 ] && break; sleep 1; i=$((i+1)); done; '
     f'for p in {" ".join(DESKTOP_PROCESSES)}; do pgrep -x $p >/dev/null && echo PROC_$p=up || echo PROC_$p=down; done; '
+    # DEC-023: satori's firewall is loaded, and nothing listens beyond loopback.
+    'sudo nft list chain inet satori input 2>/dev/null | grep -q "policy drop" && echo FIREWALL=loaded || echo FIREWALL=missing; '
+    "sudo ss -H -tuln | awk '{print $5}' | grep -v -E '^(127\\.|\\[::1\\]|\\[::ffff:127\\.)' | sed 's/^/LISTEN=/'; "
     'echo __SATORI""_END__\n'
 )
 
@@ -134,16 +138,21 @@ def run(mode, iso):
                 proc.kill()
 
     lines = [line.strip() for line in output.splitlines()]
-    results = dict(line.split("=", 1) for line in lines if "=" in line and not line.startswith("PKG="))
+    results = dict(line.split("=", 1) for line in lines
+                   if "=" in line and not line.startswith(("PKG=", "LISTEN=")))
     packages = [line[4:] for line in lines if line.startswith("PKG=")]
     down = [p for p in DESKTOP_PROCESSES if results.get(f"PROC_{p}") != "up"]
+    listening = [line[7:] for line in lines if line.startswith("LISTEN=")]
 
     print(f"[{mode}] reached login prompt in {boot_secs:.0f}s")
     print(f"[{mode}] PID 1: {results.get('PID1')}")
     print(f"[{mode}] /run/systemd/system: {results.get('RUN_SYSTEMD')}")
     print(f"[{mode}] systemd-named packages: {', '.join(packages) or 'none'}")
     print(f"[{mode}] desktop processes not running: {', '.join(down) or 'none'}")
-    ok = results.get("PID1") == "init" and results.get("RUN_SYSTEMD") == "absent" and not down
+    print(f"[{mode}] firewall: {results.get('FIREWALL')}")
+    print(f"[{mode}] listening beyond loopback: {', '.join(listening) or 'none'}")
+    ok = (results.get("PID1") == "init" and results.get("RUN_SYSTEMD") == "absent" and not down
+          and results.get("FIREWALL") == "loaded" and not listening)
     print(f"{'PASS' if ok else 'FAIL'} [{mode}] (serial log: {log_path})")
     return ok
 

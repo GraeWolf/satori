@@ -221,7 +221,8 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ The live session reaches herbstluftwm with the bar, launcher, notifications, the bar's network module (DEC-011), and working audio. `tests/smoke/live-boot.py` checks that every session process is running. Launcher, audio and network are checked by hand in QEMU and on at least one real laptop.
 - ✅ Every added package passes the no-systemd check, including those from third-party repositories. Any substitutions are documented in docs/desktop-stack.md.
 - ✅ Third-party repositories are restricted by their pins: `apt-cache policy` shows no Devuan package replaced by a Brave or XLibre package.
-- ✅ Brave Origin is the default browser, and it saves and recalls a password through gnome-keyring without an extra unlock prompt.
+- ✅ Brave Origin is the default browser.
+- ✅ The DEC-023 security defaults are in place: `tests/smoke/live-boot.py` checks that satori's firewall is loaded and that nothing listens beyond loopback; the browser and NetworkManager policy files are installed.
 - ✅ `satori-get-melia` installs Melia, and it refuses a download whose signature or checksum is wrong.
 
 **Phase 3: Installer**
@@ -229,6 +230,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ All four unattended install-matrix runs pass (§5.2).
 - ✅ An interactive install on real hardware, with LUKS, boots and passes the manual checklist.
 - ✅ Hibernate and resume work on real hardware, with and without LUKS (DEC-017).
+- ✅ On an installed system, Brave Origin saves and recalls a password through gnome-keyring without an extra unlock prompt (DEC-030). Moved from Phase 2: the live session autologins, so PAM has no password to unlock the keyring with.
 
 **Phase 4: Branding**
 - `satori-branding`, the GRUB theme, wallpaper, and os-release diversion.

@@ -159,14 +159,17 @@ When a decision changes, edit the entry in place and add a dated line to its
 
 ### DEC-023 Security and privacy defaults
 - **Status:** Decided
-- **Defaults:**
-  - nftables firewall: inbound denied except established/related, all outbound allowed.
-  - No services listen on the network by default, and there's no SSH server.
-  - No `popularity-contest`.
-  - Firefox ESR policies turn off telemetry, studies, and sponsored content.
-  - Brave Origin already strips most telemetry. Phase 2 checks what remains and switches it off with Chromium managed policies in `/etc/brave/policies/managed/`, if any is needed.
-  - NetworkManager uses randomised MAC addresses when scanning Wi-Fi.
-- **History:** 2026-09-28 recorded (previously only in SPEC.md §3.6). Same day, added the Brave Origin policy check (DEC-028).
+- **Defaults** (all shipped by `satori-config`):
+  - **Firewall:** `/etc/satori/nftables.conf`, loaded at boot by the `satori-firewall` init script. Inbound traffic is dropped except loopback, established/related replies, and the ICMPv6 and DHCPv6 traffic IPv6 needs. Forwarding is dropped, and all outbound traffic is allowed.
+    - Devuan's `nftables` package ships only a systemd unit, so nothing else would load a ruleset at boot.
+    - The ruleset replaces only its own `inet satori` table and never runs `flush ruleset`, so rules from other software (libvirt, Docker) survive.
+    - `satori-firewall` starts after `nftables`, in case `orphan-sysvinit-scripts` is installed later: that script's default config flushes everything.
+  - **Nothing listens on the network.** The only listener is `chronyd` on loopback, and there's no SSH server. The smoke test fails if anything else listens beyond loopback.
+  - **No `popularity-contest`.**
+  - **Firefox ESR:** `/usr/share/firefox-esr/distribution/policies.json` turns off telemetry, studies, Pocket, and sponsored tiles and suggestions.
+  - **Brave Origin:** Origin already removes most telemetry. The binary still honours `BraveP3AEnabled`, `BraveStatsPingEnabled`, `BraveWebDiscoveryEnabled` and `MetricsReportingEnabled`, so `/etc/brave/policies/managed/satori.json` sets all four to false as a backstop.
+  - **NetworkManager:** `/etc/NetworkManager/conf.d/satori-privacy.conf` sets `wifi.scan-rand-mac-address=yes` explicitly. It's NetworkManager's default, pinned so a default change can't undo it.
+- **History:** 2026-09-28 recorded (previously only in SPEC.md §3.6). Same day, added the Brave Origin policy check (DEC-028). 2026-09-29 (Phase 2): implemented, with the firewall and listener checks added to the smoke test.
 
 ### DEC-024 Time sync: chrony
 - **Status:** Decided
