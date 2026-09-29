@@ -80,5 +80,9 @@ if [ "${install}" = no ]; then
 	exit 0
 fi
 
-DEBIAN_FRONTEND=noninteractive apt-get install -y "${work}/${deb}"
+# Melia depends on "kde-cli-tools | kde-runtime | trash-cli | libglib2.0-bin |
+# gvfs-bin". With none installed, apt picks kde-cli-tools and pulls in ~110
+# KDE packages (~490 MB); installing libglib2.0-bin alongside satisfies it
+# with one small package.
+DEBIAN_FRONTEND=noninteractive apt-get install -y "${work}/${deb}" libglib2.0-bin
 echo "Melia installed. Note: Melia updates itself from inside the app, outside APT."
