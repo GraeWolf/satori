@@ -53,15 +53,18 @@ else
 	PKG_VERSION="${DEB_BASE}~dev${COUNT}.g${SHORT}"
 fi
 
+# Both steps use the host's network: a bridge network needs forwarding and
+# inbound DNS to the container engine's resolver, which satori's own firewall
+# (DEC-023) drops. The build container needs no network isolation.
 echo "==> Building container image with ${ENGINE}"
-"${ENGINE}" build -t "${IMAGE}" -f "${REPO}/container/Containerfile" "${REPO}/container"
+"${ENGINE}" build --network=host -t "${IMAGE}" -f "${REPO}/container/Containerfile" "${REPO}/container"
 IMAGE_ID="$("${ENGINE}" image inspect --format '{{.Id}}' "${IMAGE}")"
 BASE_IMAGE="$(sed -n 's/^FROM[[:space:]]*//p' "${REPO}/container/Containerfile")"
 
 echo "==> Building satori ${VERSION}"
 mkdir -p "${OUT}"
 status=0
-"${ENGINE}" run --rm --privileged \
+"${ENGINE}" run --rm --privileged --network=host \
 	-v "${REPO}:/src:ro" \
 	-v "${OUT}:/out" \
 	-e SATORI_VERSION="${VERSION}" \
