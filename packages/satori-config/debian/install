@@ -6,3 +6,4 @@ files/etc/satori/nftables.conf etc/satori/
 files/etc/brave/policies/managed/satori.json etc/brave/policies/managed/
 files/etc/NetworkManager/conf.d/satori-privacy.conf etc/NetworkManager/conf.d/
 files/usr/share/firefox-esr/distribution/policies.json usr/share/firefox-esr/distribution/
+files/usr/share/pam-configs/satori-gnome-keyring usr/share/pam-configs/

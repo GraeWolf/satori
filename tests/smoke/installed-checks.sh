@@ -28,5 +28,24 @@ echo "LANG=$(sed -n 's/^LANG=//p' /etc/default/locale | tr -d '"')"
 echo "KEYMAP=$(sed -n 's/^XKBLAYOUT=//p' /etc/default/keyboard | tr -d '"')"
 echo "ROOT_PASSWORD=$(passwd -S root | awk '{print $2}')"
 echo "USER_GROUPS=$(id -nG tester | tr ' ' ',')"
+# DEC-030: logging in with a password (install.py logs in on the serial
+# console, PAM service "login") starts the keyring daemon with that password.
+echo "KEYRING_DAEMON=$(pgrep -u tester -x gnome-keyring-d >/dev/null && echo running || echo missing)"
+# pam_gnome_keyring needs XDG_RUNTIME_DIR, which pam_elogind sets up.
+echo "PAM_ORDER=$(awk '/pam_elogind/ { e = NR } /pam_gnome_keyring/ { g = NR } END { print (e && g && e < g) ? "ok" : "wrong" }' /etc/pam.d/common-session)"
+# Then do what satori-session does in the X session (start the secrets
+# component on a session bus) and ask over D-Bus whether the login keyring is
+# unlocked. The daemon creates it on first use, from the login password.
+uid="$(id -u tester)"
+locked="$(sudo -u tester env HOME=/home/tester XDG_RUNTIME_DIR="/run/user/${uid}" dbus-run-session -- sh -c \
+	'gnome-keyring-daemon --start --components=secrets >/dev/null 2>&1
+	 dbus-send --session --print-reply --dest=org.freedesktop.secrets /org/freedesktop/secrets/collection/login \
+		org.freedesktop.DBus.Properties.Get string:org.freedesktop.Secret.Collection string:Locked' 2>/dev/null \
+	| awk '/boolean/ { print $3 }')"
+case "${locked}" in
+	false) echo "LOGIN_KEYRING=unlocked" ;;
+	true)  echo "LOGIN_KEYRING=locked" ;;
+	*)     echo "LOGIN_KEYRING=missing" ;;
+esac
 echo "FIREWALL=$(nft list chain inet satori input 2>/dev/null | grep -q 'policy drop' && echo loaded || echo missing)"
 echo "GRUB_PKG=$(dpkg-query -W -f '${Package} ${db:Status-Status}\n' grub-pc grub-efi-amd64 2>/dev/null | awk '$2 == "installed" { print $1 }')"

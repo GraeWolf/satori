@@ -31,7 +31,7 @@ and configured by `satori-config`.
 | File manager | `thunar` + `gvfs`, `tumbler` | Removable media and trash. `tumbler` provides Thunar's thumbnails |
 | Editor | `neovim` (CLI) + `mousepad` (GUI) | |
 | Browser | `brave-origin` (default), `firefox-esr` (fallback) | DEC-028. Brave Origin from Brave's APT repo (DEC-026). Default set by `/etc/xdg/mimeapps.list` (satori-config) and by pointing the `x-www-browser` alternative at `brave-origin-stable` on first install (satori-desktop postinst). Firefox policies in satori-config |
-| Keyring | `gnome-keyring`, `libpam-gnome-keyring` | DEC-030. Secret Service for Brave, Melia, Firefox and NetworkManager. Unlocked by PAM at tty1 login |
+| Keyring | `gnome-keyring`, `libpam-gnome-keyring` | DEC-030. Secret Service for Brave, Melia, Firefox and NetworkManager. Unlocked by PAM at tty1 login, through satori-config's `satori-gnome-keyring` PAM profile (Excalibur's own profile covers password changes only) |
 | Email | Melia, not preinstalled | DEC-029. `satori-get-melia` downloads and verifies the signed `.deb` on demand |
 | Screenshots | `maim` + `xclip` | `satori-screenshot`, bound to `Mod+p` / `Mod+Shift+p` |
 | Clipboard | `xclip`, `copyq` | `clipmenu` isn't packaged in Excalibur; CopyQ replaces it (`Mod+v`). `cliphist` and `clipman` are Wayland-only |

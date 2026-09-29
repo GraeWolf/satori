@@ -5,5 +5,7 @@ satori-config (0.1) unstable; urgency=medium
     satori-get-melia.
   * Security and privacy defaults (DEC-023): satori-firewall (nftables),
     Firefox ESR and Brave telemetry policies, Wi-Fi scan MAC randomisation.
+  * pam-auth-update profile so a console login unlocks the GNOME keyring:
+    Excalibur's libpam-gnome-keyring profile only handles password changes.
 
  -- satori project <noreply@satori.invalid>  Mon, 28 Sep 2026 12:00:00 +0000

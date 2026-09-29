@@ -8,7 +8,7 @@ Rules-Requires-Root: no
 
 Package: satori-config
 Architecture: all
-Depends: ${misc:Depends}, curl, gpgv, nftables
+Depends: ${misc:Depends}, curl, gpgv, nftables, libpam-gnome-keyring, libpam-runtime
 Description: satori desktop defaults and helper scripts
  System-wide defaults for the satori desktop: the X session
  (satori-session), herbstluftwm autostart and keybindings, polybar and picom

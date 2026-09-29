@@ -232,8 +232,13 @@ When a decision changes, edit the entry in place and add a dated line to its
 ### DEC-030 Secret Service: gnome-keyring
 - **Status:** Decided
 - **Why:** Brave, Melia, Firefox and NetworkManager all store credentials through the Secret Service API. herbstluftwm provides none.
-- **Design:** `gnome-keyring` plus `libpam-gnome-keyring` unlocks the keyring with the login password at tty1. `.xinitrc` starts the secrets component inside the session's D-Bus. It must be verified in Phase 2 that this works with elogind and `startx`.
-- **History:** 2026-09-28 decided.
+- **Design:**
+  - At a console login (PAM service `login`), `pam_gnome_keyring` receives the login password, starts the daemon, and creates or unlocks the `login` keyring with it.
+  - `satori-session` then runs `gnome-keyring-daemon --start --components=secrets`, which attaches the running daemon to the X session's D-Bus.
+  - Excalibur's `libpam-gnome-keyring` profile only handles password changes; Debian relies on display managers adding `pam_gnome_keyring` to their own PAM files, and satori has none (DEC-014). So `satori-config` ships the `pam-auth-update` profile `satori-gnome-keyring`: auth and session lines with `only_if=login`, so `sudo` and `su` never start keyring daemons for root.
+  - It has priority -1, so it comes after `pam_elogind` (priority 0), which sets up the `XDG_RUNTIME_DIR` the daemon needs. `pam-auth-update` breaks priority ties by reverse name, which would otherwise put it first.
+  - `tests/smoke/install.py` checks, on each installed system after a password login, that the daemon runs, the `login` keyring exists, and the PAM order is right.
+- **History:** 2026-09-28 decided. 2026-09-29 (Phase 3): the maintainer's QEMU test found the keyring asking to be created at first login and to be unlocked at the next; added the `satori-gnome-keyring` PAM profile.
 
 ### DEC-031 Build container: pinned Devuan image, rootful Podman or Docker
 - **Status:** Decided

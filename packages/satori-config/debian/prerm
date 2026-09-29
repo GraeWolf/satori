@@ -3,6 +3,7 @@ set -e
 
 if [ "$1" = remove ] || [ "$1" = deconfigure ]; then
 	update-alternatives --remove x-session-manager /usr/bin/satori-session
+	pam-auth-update --package --remove satori-gnome-keyring
 fi
 
 #DEBHELPER#

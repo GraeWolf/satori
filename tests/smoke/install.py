@@ -70,6 +70,7 @@ def expected(mode, luks):
         "ROOT_PASSWORD": "L", "FIREWALL": "loaded",
         "GRUB_PKG": "grub-efi-amd64" if mode == "uefi" else "grub-pc",
         "HIBERNATE": "resumed",
+        "KEYRING_DAEMON": "running", "LOGIN_KEYRING": "unlocked", "PAM_ORDER": "ok",
     }
 
 
