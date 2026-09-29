@@ -31,5 +31,10 @@
   automated installs can't run on real hardware.
 
 ### Fixed
+- Installer: the timezone and keyboard steps showed only a few matches,
+  because the current value was pre-typed as the search. They now start with
+  the full list (418 timezones, including aliases such as Europe/Oslo) and the
+  current value first.
+- Console logins now unlock the GNOME keyring (no create or unlock prompts).
 - Live-session autologin on Excalibur: live-config's sysvinit component never
   ran, so satori ships its own using agetty `--autologin`.

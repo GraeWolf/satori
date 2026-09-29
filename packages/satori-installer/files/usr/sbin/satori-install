@@ -134,6 +134,11 @@ locale_line()  { grep -m1 "^${1} " /usr/share/i18n/SUPPORTED 2>/dev/null; }
 # the writer's SIGPIPE fail the whole pipeline even on a match.)
 keymap_list()  { awk '/^! layout/{f=1; next} /^!/{f=0} f{print $1}' /usr/share/X11/xkb/rules/base.lst; }
 keymap_valid() { local all; all="$(keymap_list)"; grep -qx -- "$1" <<<"${all}"; }
+# zone1970.tab leaves out zones that share rules with another (Europe/Oslo,
+# Asia/Kuwait, ...); zone.tab lists at least one per country. Use both.
+timezone_list() { awk '!/^#/ { print $3 }' /usr/share/zoneinfo/zone1970.tab /usr/share/zoneinfo/zone.tab | sort -u; }
+# List with the current value first (so Enter keeps it), without duplicates.
+current_first() { { printf '%s\n' "$@"; cat; } | awk 'NF && !seen[$0]++'; }
 valid_user()   { [[ "$1" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] && ! grep -q "^$1:" "${SOURCE}/etc/passwd"; }
 valid_host()   { [[ "$1" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]]; }
 
@@ -212,8 +217,11 @@ ask_system() {
 		valid_host "${TARGET_HOSTNAME}" && break
 		gum style --foreground 1 "Letters, digits and hyphens only."
 	done
-	TIMEZONE="$(awk '!/^#/ {print $3}' /usr/share/zoneinfo/zone1970.tab | sort -u \
-		| gum filter --header "Timezone (type to search)" --value "${TIMEZONE}")" || return 1
+	# The search starts empty so the whole list shows; --value would pre-fill the
+	# search text and hide almost everything.
+	TIMEZONE="$(timezone_list | current_first "${TIMEZONE}" UTC \
+		| gum filter --header "Timezone: type a city to search, Enter to choose" \
+			--placeholder "e.g. Chicago, Berlin, Tokyo")" || return 1
 	other="other (type a locale)"
 	LOCALE="$(printf '%s\n' en_US.UTF-8 en_GB.UTF-8 de_DE.UTF-8 fr_FR.UTF-8 es_ES.UTF-8 \
 		it_IT.UTF-8 nl_NL.UTF-8 pt_BR.UTF-8 pl_PL.UTF-8 sv_SE.UTF-8 ja_JP.UTF-8 "${other}" \
@@ -222,7 +230,9 @@ ask_system() {
 		LOCALE="$(gum input --placeholder "e.g. da_DK.UTF-8" --header "Locale")" || return 1
 	done
 	current_layout="$(. /etc/default/keyboard 2>/dev/null; echo "${XKBLAYOUT:-us}")"
-	KEYMAP="$(keymap_list | gum filter --header "Keyboard layout" --value "${current_layout%%,*}")" || return 1
+	KEYMAP="$(keymap_list | current_first "${current_layout%%,*}" \
+		| gum filter --header "Keyboard layout: type to search, Enter to choose" \
+			--placeholder "e.g. us, gb, de, fr")" || return 1
 }
 
 ask_user() {
