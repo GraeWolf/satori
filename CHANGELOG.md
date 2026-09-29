@@ -22,6 +22,13 @@
   checksum verify.
 - Security and privacy defaults (DEC-023): nftables firewall (`satori-firewall`),
   Firefox ESR and Brave telemetry policies, Wi-Fi scan MAC randomisation.
+- Installer (Phase 3): `satori-install`, a gum TUI that installs the live system
+  to a whole disk with optional LUKS2, on BIOS or UEFI, with a RAM-sized
+  swapfile and resume configured for hibernation. Unattended mode for tests.
+- `satori-swap-resize` recreates the swapfile and keeps hibernation working.
+- `tests/smoke/install.py`: unattended {BIOS, UEFI} × {plain, LUKS} installs in
+  QEMU, each booted and checked. Answers reach the VM through QEMU fw_cfg, so
+  automated installs can't run on real hardware.
 
 ### Fixed
 - Live-session autologin on Excalibur: live-config's sysvinit component never

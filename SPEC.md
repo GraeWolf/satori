@@ -69,7 +69,7 @@ In practice this means:
 | `satori-config` | System-wide defaults in `/usr/share/satori/` (used only when the user has no config of their own): the `satori-session` X session, herbstluftwm autostart and keybindings, polybar and picom configs, startx on tty1, the default browser, browser policies, firewall ruleset, NetworkManager MAC randomisation. Helper scripts: `satori-run-once`, `satori-keys`, `satori-powermenu`, `satori-screenshot`, `satori-get-melia` (DEC-029), and later `satori-swap-resize` (DEC-017). |
 | `satori-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026). |
 | `satori-branding` | `os-release`/`issue` via `dpkg-divert` (these files are owned by `base-files`), wallpapers, GRUB theme, logo assets. |
-| `satori-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)). Installed in the live image only, removed from the target. |
+| `satori-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)) and the QEMU-only `satori-autoinstall` init script. Installed in the live image only, purged from the target. |
 
 Rule: **no loose overlay files for anything a user might need updated.** The
 `includes.chroot/` overlay is reserved for live-session-only tweaks.
@@ -133,7 +133,7 @@ Output goes to `out/` (git-ignored):
 - `scripts/test-in-qemu.sh`: boots the ISO under SeaBIOS or OVMF in a QEMU window, for hands-on testing.
 - `tests/smoke/` automated tests, driven over the serial console. The live ISO's GRUB menu has a "serial console" entry (hotkey `s`) that sends kernel output to `ttyS0` and starts a serial login prompt. Tests press `s` at the menu; the default entry is unaffected.
   - `tests/smoke/live-boot.py`: the live image boots on BIOS and UEFI, a login prompt appears, and the no-systemd runtime check passes.
-  - Install matrix: {BIOS, UEFI} × {plain, LUKS} = 4 unattended installs (answers file, [docs/installer.md](docs/installer.md) §6). Each installed system must reboot to a login prompt and pass the checks.
+  - `tests/smoke/install.py`: install matrix, {BIOS, UEFI} × {plain, LUKS} = 4 unattended installs (answers file via QEMU fw_cfg, [docs/installer.md](docs/installer.md) §6). Each installed system must boot to a login prompt and pass `tests/smoke/installed-checks.sh`. `tests/smoke/qemu_serial.py` holds the shared QEMU and serial-console code.
 - Manual QA checklist in `docs/testing.md`, for things that are hard to automate on real hardware: Wi-Fi, audio, suspend/resume, hibernate/resume, backlight, external monitors.
 
 ### 5.3 Reproducibility
@@ -191,8 +191,8 @@ satori/
 │   └── test-in-qemu.sh
 ├── tests/
 │   ├── systemd-allowlist.txt
-│   ├── answers/                   # installer answer files for the test matrix
-│   └── smoke/                     # serial-console tests, e.g. live-boot.py
+│   └── smoke/                     # serial-console tests: live-boot.py, install.py,
+│                                  # installed-checks.sh, qemu_serial.py
 └── docs/
     ├── building.md
     ├── customizing.md

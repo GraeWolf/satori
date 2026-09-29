@@ -1,0 +1,34 @@
+Source: satori-installer
+Section: admin
+Priority: optional
+Maintainer: satori project <noreply@satori.invalid>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: satori-installer
+Architecture: all
+Depends: ${misc:Depends},
+ gum,
+ rsync,
+ cryptsetup,
+ cryptsetup-initramfs,
+ gdisk,
+ parted,
+ dosfstools,
+ e2fsprogs,
+ efibootmgr,
+ grub2-common,
+ grub-pc-bin,
+ grub-efi-amd64-bin,
+ initramfs-tools,
+ locales,
+ keyboard-configuration,
+ debconf
+Description: satori installer (live session only)
+ satori-install copies the satori live system to a whole disk, with optional
+ LUKS2 encryption, on BIOS or UEFI machines, using a keyboard-driven gum
+ interface. It also has an unattended mode for automated tests.
+ .
+ This package belongs to the live image only; the installer purges it from
+ the installed system.

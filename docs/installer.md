@@ -5,14 +5,19 @@ with optional LUKS2 encryption, on BIOS or UEFI machines. Scope is fixed by DEC-
 
 ## 1. Approach
 
-The installer **copies the live root filesystem** (the mounted squashfs) to the
-target, then removes live-only packages and configures the target system. This is
-the same model Devuan's `refractainstaller` uses. It needs no network during
-install, and the installed system matches exactly what the user tested live.
+The installer **copies the live system image** to the target, then removes
+live-only packages and configures the target system. This is the same model
+Devuan's `refractainstaller` uses. It needs no network during install, and the
+installed system matches what the user tested live.
 
-Implementation: a bash script (`/usr/sbin/satori-install`) using `gum` for all
-prompts, running as root from the live session. Before writing custom logic,
-study refractainstaller and reuse its approach where it fits.
+The source is the pristine squashfs (`/run/live/rootfs/filesystem.squashfs`), not
+the running root. Changes the live session makes at runtime therefore never
+reach the installed system: the live user, autologin, and files live-config
+generates at boot.
+
+Implementation: `/usr/sbin/satori-install`, a bash script using `gum` for all
+prompts, packaged as `satori-installer` (live image only). The interactive and
+unattended paths share every validation and install step.
 
 ## 2. Flow
 
@@ -36,12 +41,13 @@ study refractainstaller and reuse its approach where it fits.
     - `fstab` and `crypttab` by UUID
     - Hostname, `/etc/hosts`, timezone, locale, and keyboard (`/etc/default/keyboard`)
     - Create the user, lock root
-    - Purge `live-boot`, `live-config*`, and `satori-installer`, and undo live-only overlays
+    - Purge the live packages (`live-boot*`, `live-config*`, `live-tools`) and `satori-installer`. Remove satori's live-only files (`0161-satori-autologin`, `satori-serial-getty`), and restore `/etc/inittab` from `/usr/share/sysvinit/inittab`, which drops the live image's serial test getty.
     - Create the swapfile (DEC-017): `/swapfile`, size = RAM rounded up to the next GiB, mode 0600, created with `mkswap --file` so it has no holes
-    - Configure resume: write `RESUME=UUID=<root fs UUID>` and `RESUME_OFFSET=<offset>` (the first physical extent from `filefrag -v /swapfile`) to `/etc/initramfs-tools/conf.d/resume`
-    - For LUKS, `cryptsetup-initramfs` is installed
-    - Run `update-initramfs -u -k all` (after the resume config, so the initramfs includes it)
-    - Install the bootloader: `grub-install` (`grub-efi-amd64` with `--removable` as well as an NVRAM entry, or `grub-pc`), then `update-grub`
+    - Configure resume: `resume=UUID=<root fs UUID> resume_offset=<offset>` go on the kernel command line (`GRUB_CMDLINE_LINUX`), because initramfs-tools reads `resume_offset` only from there. The offset is the first physical extent from `filefrag -v /swapfile`. `/etc/initramfs-tools/conf.d/resume` gets `RESUME=UUID=…`, which makes sure the resume hook is in the initramfs.
+    - Install `grub-pc` (BIOS) or `grub-efi-amd64` (UEFI) offline from `.deb`s the build downloads into `/usr/share/satori-installer/debs/`. The two conflict, so neither can be in the live image; their `-bin` packages are. debconf is preseeded so future GRUB upgrades reinstall to the right disk, and on UEFI keep the removable-media copy.
+    - `cryptsetup`, `cryptsetup-initramfs`, `efibootmgr` and the GRUB package are marked manually installed, so `apt autoremove` can't take them.
+    - Run `update-initramfs -u -k all`
+    - Run `grub-install` (UEFI: with an NVRAM entry, plus `--removable`; `efivarfs` is mounted first if needed), then `update-grub`
 11. **Finish.** Unmount, close LUKS, copy the install log to the target's `/var/log/satori-installer.log`, and offer to reboot.
 
 ## 3. Partition layouts (GPT in both modes)
@@ -71,17 +77,27 @@ initramfs) is needed.
 
 ## 6. Unattended mode (for tests)
 
-`satori-install --answers <file>` reads a shell-style answers file
-(`DISK=`, `ENCRYPT=`, `LUKS_PASSPHRASE=`, `HOSTNAME=`, `TZ=`, `LOCALE=`, `KEYMAP=`,
-`USERNAME=`, `PASSWORD=`, `CONFIRM_DISK=`). It skips all prompts, then reboots or
-powers off when done.
+`satori-install --answers <file>` reads a `KEY=value` answers file: `DISK=`,
+`CONFIRM_DISK=`, `ENCRYPT=`, `LUKS_PASSPHRASE=`, `HOSTNAME=`, `TZ=`, `LOCALE=`,
+`KEYMAP=`, `FULLNAME=`, `USERNAME=`, `PASSWORD=`, and `SERIAL_CONSOLE=`. The last
+adds a serial getty and `console=ttyS0` to the installed system, for tests. The
+file is parsed, never sourced, and unknown keys are an error. Every value goes
+through the same validation as the interactive prompts.
 
-For automated tests, the live ISO has a boot entry that adds `satori.autoinstall` to the
-existing "serial console" test entry (SPEC §5.2), which already provides `console=ttyS0`.
-With that parameter, the live system looks
-for an answers file on a small disk labelled `SATORI-TEST` and runs the installer
-unattended. The test harness in `tests/smoke/` builds that disk, runs the
-{BIOS, UEFI} × {plain, LUKS} matrix, and then boots each installed disk to check:
+For automated tests, the answers file reaches the live system through **QEMU
+fw_cfg** (`-fw_cfg name=opt/satori/answers,file=…`). The `satori-autoinstall`
+init script (in `satori-installer`) runs the installer unattended and then
+powers off, but only when **both** of these hold:
+- the live system was booted from the "serial console" GRUB entry (`satori.serial`)
+- the fw_cfg answers file exists
+
+fw_cfg exists only in QEMU, so an automated install can never erase a disk on
+real hardware, and there's no extra boot menu entry. (GRUB 2.12 in Excalibur
+has no `hiddenentry`, so a hidden entry wasn't an option.)
+
+`tests/smoke/install.py` runs the {BIOS, UEFI} × {plain, LUKS} matrix on blank
+virtual disks. It then boots each installed disk, logs in over serial, and runs
+`tests/smoke/installed-checks.sh` as root (also passed via fw_cfg) to check:
 - A login prompt appears (for LUKS runs, after the passphrase is sent over serial).
 - The no-systemd runtime check passes.
 - The user can `sudo`.
@@ -89,4 +105,6 @@ unattended. The test harness in `tests/smoke/` builds that disk, runs the
 - `/etc/initramfs-tools/conf.d/resume` matches the swapfile's current offset. Hibernate/resume itself is verified manually on real hardware (SPEC §7, Phase 3).
 - No live-* packages remain.
 
-This entry only works with the test disk present. Without it, `satori.autoinstall` does nothing.
+- Hostname, timezone, locale and keyboard match the answers file; root is locked; the user is in `sudo`.
+- satori's firewall is loaded, and the right GRUB package is installed.
+- The swapfile is active and RAM-sized, and the kernel's `resume=`/`resume_offset=` match the root filesystem and swapfile.

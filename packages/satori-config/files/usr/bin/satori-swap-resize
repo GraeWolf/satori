@@ -1,0 +1,43 @@
+#!/bin/sh
+# Recreate /swapfile at a new size and update the resume offset hibernation
+# depends on (DEC-017). Hibernation reads the swapfile's physical location from
+# the kernel command line, so moving or resizing /swapfile any other way breaks
+# resume.
+#   sudo satori-swap-resize SIZE_GIB
+# To hibernate reliably, SIZE_GIB should be at least your installed RAM.
+set -eu
+
+die() { echo "satori-swap-resize: $*" >&2; exit 1; }
+
+size="${1:-}"
+case "${size}" in ''|*[!0-9]*|0) die "usage: sudo $0 SIZE_GIB" ;; esac
+[ "$(id -u)" -eq 0 ] || die "run as root: sudo $0 ${size}"
+grep -q 'resume_offset=' /etc/default/grub \
+	|| die "/etc/default/grub has no resume_offset=; this system wasn't set up by satori-install"
+
+avail_kib="$(df --output=avail -k / | tail -n 1)"
+current_kib=0
+[ -e /swapfile ] && current_kib="$(( $(stat -c %s /swapfile) / 1024 ))"
+[ $(( avail_kib + current_kib )) -gt $(( size * 1024 * 1024 + 1024 * 1024 )) ] \
+	|| die "not enough free space on / for a ${size} GiB swapfile (keeping 1 GiB free)"
+
+echo "Recreating /swapfile at ${size} GiB..."
+if swapon --show=NAME --noheadings | grep -qx /swapfile; then
+	swapoff /swapfile
+fi
+rm -f /swapfile
+mkswap --file --size "$(( size * 1024 * 1024 * 1024 ))" /swapfile >/dev/null
+chmod 600 /swapfile
+
+offset="$(filefrag -v /swapfile | awk '$1 == "0:" { sub(/\.\.$/, "", $4); print $4; exit }')"
+case "${offset}" in ''|*[!0-9]*) die "couldn't read the new swapfile's physical offset" ;; esac
+uuid="$(findmnt -no UUID /)"
+
+sed -i -E "s/resume_offset=[0-9]+/resume_offset=${offset}/; s/resume=UUID=[^ \"]+/resume=UUID=${uuid}/" /etc/default/grub
+update-grub >/dev/null 2>&1
+
+# Tell the running kernel too, so hibernation works before the next reboot.
+[ -w /sys/power/resume_offset ] && echo "${offset}" > /sys/power/resume_offset
+swapon /swapfile
+
+echo "Done: /swapfile is ${size} GiB, resume_offset=${offset}."

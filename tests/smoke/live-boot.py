@@ -12,22 +12,15 @@ component in DESKTOP_PROCESSES is running (Phase 2), that satori's firewall is
 loaded, and that nothing listens beyond loopback (DEC-023). Serial logs are
 written to out/serial-<mode>.log. Exits non-zero if any mode fails.
 """
-import glob
 import os
-import select
-import shutil
-import subprocess
 import sys
 import tempfile
 import time
 
-REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUT = os.path.join(REPO, "out")
-OVMF_CODE = "/usr/share/OVMF/OVMF_CODE_4M.fd"
-OVMF_VARS = "/usr/share/OVMF/OVMF_VARS_4M.fd"
+from qemu_serial import (OUT, SERIAL_ENTRY_HOTKEY, SERIAL_ENTRY_TITLE, Serial,
+                         newest_iso, qemu_command, start, stop, uefi_vars)
+
 LIVE_USER, LIVE_PASSWORD = "user", "live"
-SERIAL_ENTRY_TITLE = "serial console"   # GRUB entry in live-build/config/bootloaders/grub-pc/grub.cfg
-SERIAL_ENTRY_HOTKEY = "s"
 
 MENU_TIMEOUT = 60
 BOOT_TIMEOUT = 300
@@ -59,58 +52,11 @@ CHECK_CMD = (
 )
 
 
-class Serial:
-    def __init__(self, proc, log):
-        self.proc, self.log, self.buf = proc, log, ""
-
-    def expect(self, needle, timeout):
-        deadline = time.monotonic() + timeout
-        while needle not in self.buf:
-            if self.proc.poll() is not None:
-                raise RuntimeError(f"QEMU exited while waiting for {needle!r}")
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise TimeoutError(f"timed out after {timeout}s waiting for {needle!r}")
-            ready, _, _ = select.select([self.proc.stdout], [], [], min(remaining, 1.0))
-            if ready:
-                chunk = os.read(self.proc.stdout.fileno(), 4096).decode("utf-8", "replace")
-                self.buf += chunk
-                self.log.write(chunk)
-                self.log.flush()
-        before, _, self.buf = self.buf.partition(needle)
-        return before
-
-    def send(self, text):
-        self.proc.stdin.write(text.encode())
-        self.proc.stdin.flush()
-
-
-def qemu_command(mode, iso, vars_copy):
-    cmd = [
-        "qemu-system-x86_64", "-m", "2048", "-smp", "2",
-        "-display", "none", "-serial", "stdio", "-monitor", "none",
-        "-no-reboot", "-cdrom", iso, "-boot", "d",
-    ]
-    if os.access("/dev/kvm", os.R_OK | os.W_OK):
-        cmd += ["-enable-kvm", "-cpu", "host"]
-    if mode == "uefi":
-        cmd += [
-            "-machine", "q35",
-            "-drive", f"if=pflash,format=raw,readonly=on,file={OVMF_CODE}",
-            "-drive", f"if=pflash,format=raw,file={vars_copy}",
-        ]
-    return cmd
-
-
 def run(mode, iso):
     log_path = os.path.join(OUT, f"serial-{mode}.log")
     with tempfile.TemporaryDirectory() as tmp, open(log_path, "w") as log:
-        vars_copy = os.path.join(tmp, "OVMF_VARS.fd")
-        if mode == "uefi":
-            shutil.copy(OVMF_VARS, vars_copy)
-        proc = subprocess.Popen(qemu_command(mode, iso, vars_copy),
-                                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
+        vars_path = uefi_vars(os.path.join(tmp, "OVMF_VARS.fd")) if mode == "uefi" else None
+        proc = start(qemu_command(mode, vars_path) + ["-cdrom", iso, "-boot", "d"])
         con = Serial(proc, log)
         started = time.monotonic()
         try:
@@ -126,10 +72,7 @@ def run(mode, iso):
             con.expect(BEGIN, CMD_TIMEOUT)
             output = con.expect(END, DESKTOP_TIMEOUT + CMD_TIMEOUT)
             con.send("sudo poweroff\n")
-            try:
-                proc.wait(timeout=CMD_TIMEOUT)
-            except subprocess.TimeoutExpired:
-                pass
+            stop(proc, CMD_TIMEOUT)
         except (TimeoutError, RuntimeError) as err:
             print(f"FAIL [{mode}]: {err}. Serial log: {log_path}")
             return False
@@ -162,13 +105,9 @@ def main():
     mode = args.pop(0) if args and args[0] in ("bios", "uefi", "all") else "all"
     if len(args) > 1:
         sys.exit(__doc__)
-    if args:
-        iso = os.path.abspath(args[0])
-    else:
-        isos = sorted(glob.glob(os.path.join(OUT, "satori-*-amd64.iso")), key=os.path.getmtime)
-        if not isos:
-            sys.exit("error: no out/satori-*-amd64.iso; run sudo scripts/build.sh first")
-        iso = isos[-1]
+    iso = os.path.abspath(args[0]) if args else newest_iso()
+    if not iso:
+        sys.exit("error: no out/satori-*-amd64.iso; run sudo scripts/build.sh first")
     if not os.path.exists(iso):
         sys.exit(f"error: {iso} not found")
 

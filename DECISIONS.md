@@ -123,11 +123,11 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Design:**
   - A swapfile at `/swapfile` on the root filesystem, so it sits inside LUKS when encryption is chosen. That avoids a second encrypted partition or LVM.
   - Size: equal to installed RAM, rounded up to the next GiB, so a hibernation image always fits. The installer's minimum disk size grows accordingly ([docs/installer.md](docs/installer.md) §2).
-  - Resume: the installer writes `RESUME=UUID=<root fs UUID>` and `RESUME_OFFSET=<swapfile physical offset>` (from `filefrag -v`) to `/etc/initramfs-tools/conf.d/resume`. The initramfs unlocks LUKS before it tries to resume, so one passphrase prompt covers both.
+  - Resume: the installer puts `resume=UUID=<root fs UUID> resume_offset=<swapfile physical offset>` (offset from `filefrag -v`) on the kernel command line via `GRUB_CMDLINE_LINUX`. initramfs-tools reads `resume_offset` only from the kernel command line. `/etc/initramfs-tools/conf.d/resume` gets `RESUME=UUID=…` so the resume hook is included. The initramfs unlocks LUKS before it tries to resume, so one passphrase prompt covers both.
   - Trigger: `loginctl hibernate` (elogind), bound in the rofi power menu. The lid close action stays suspend.
-- **Constraints:** The swapfile must not be recreated or moved without updating `RESUME_OFFSET`. `satori-config` ships a helper (`satori-swap-resize`) that does both. Hibernation is incompatible with Secure Boot lockdown (DEC-016).
+- **Constraints:** The swapfile must not be recreated or moved without updating `resume_offset`. `satori-config` ships `satori-swap-resize SIZE_GIB`, which recreates the swapfile, updates `/etc/default/grub` and runs `update-grub`, and writes `/sys/power/resume_offset` so hibernation works before the next reboot. Hibernation is incompatible with Secure Boot lockdown (DEC-016).
 - **Acceptance:** Phase 3 adds a hibernate/resume round trip to the manual hardware checklist, both with and without LUKS.
-- **History:** 2026-09-28 proposed as "swapfile, no hibernation". Changed the same day by the maintainer to support hibernation.
+- **History:** 2026-09-28 proposed as "swapfile, no hibernation". Changed the same day by the maintainer to support hibernation. 2026-09-29 (Phase 3): corrected the resume mechanism. `RESUME_OFFSET` in `conf.d` is not read by initramfs-tools; the offset goes on the kernel command line.
 
 ### DEC-018 Filesystem: ext4
 - **Status:** Decided

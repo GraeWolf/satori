@@ -1,0 +1,20 @@
+#!/bin/sh
+# satori-install puts either grub-pc (BIOS) or grub-efi-amd64 (UEFI) on the
+# installed system. The two conflict, so neither can be installed in the live
+# image; the installer installs the right one from these .debs, offline. Their
+# -bin packages come with satori-installer, and the versions must match.
+set -e
+
+DIR=/usr/share/satori-installer/debs
+mkdir -p "${DIR}"
+cd "${DIR}"
+apt-get download grub-pc grub-efi-amd64
+
+for pair in grub-pc:grub-pc-bin grub-efi-amd64:grub-efi-amd64-bin; do
+	pkg="${pair%%:*}"
+	bin="${pair##*:}"
+	have="$(dpkg-query -W -f '${Version}' "${bin}")"
+	want="$(dpkg-deb -f "${pkg}"_*.deb Version)"
+	[ "${have}" = "${want}" ] || { echo "FAIL: ${pkg} ${want} doesn't match installed ${bin} ${have}"; exit 1; }
+done
+echo "OK: installer GRUB packages match the installed GRUB binaries"
