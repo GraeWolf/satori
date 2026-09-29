@@ -13,7 +13,7 @@ and configured by `satori-config`.
 
 | Role | Choice | Notes |
 |---|---|---|
-| Display server | `xlibre` (metapackage), `xinit` | X11 only (DEC-004). XLibre from its third-party repo plus Excalibur backports (DEC-027). Check NVIDIA proprietary driver compatibility |
+| Display server | `xlibre` (metapackage), `xinit` | X11 only (DEC-004). XLibre from its third-party repo (DEC-027); Excalibur backports aren't needed. Check NVIDIA proprietary driver compatibility |
 | Login | tty1 login → `startx` (DEC-014) | Live session: autologin on tty1 |
 | Seat/session | `elogind`, `libpam-elogind`, `polkitd` | Rootless X, device access, lid/power keys. Devuan's `libelogind-compat` replaces `libsystemd0` in the desktop image, and `udev` is Devuan's transitional package for `eudev` |
 | Window manager | `herbstluftwm` | |

@@ -1,0 +1,20 @@
+#!/bin/sh
+# Build the system font cache as late as possible, so the first desktop session
+# doesn't spend ~14 s building a per-user cache for every Noto font.
+#
+# Without this the image ships no usable cache: /var/cache/fontconfig ends up
+# empty, and fontconfig validates caches against font directory mtimes, which
+# mksquashfs clamps to SOURCE_DATE_EPOCH (exported by live-build). So first set
+# those mtimes to SOURCE_DATE_EPOCH, then build the cache to match.
+set -e
+
+if [ -n "${SOURCE_DATE_EPOCH:-}" ]; then
+	for dir in /usr/share/fonts /usr/local/share/fonts; do
+		[ -d "${dir}" ] && find "${dir}" -type d -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
+	done
+fi
+
+fc-cache --system-only --force
+count="$(find /var/cache/fontconfig -name '*.cache-*' | wc -l)"
+[ "${count}" -gt 0 ] || { echo "FAIL: fc-cache produced no system font cache"; exit 1; }
+echo "OK: system font cache has ${count} files"

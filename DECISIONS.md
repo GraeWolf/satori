@@ -190,14 +190,14 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Current repositories:**
   - Brave (for `brave-origin*`, DEC-028)
   - XLibre for Devuan (for `xlibre*`/`xserver-xlibre*`, DEC-027)
-  - Devuan `excalibur-backports`. It's a Devuan repository, but it's pinned to the packages XLibre needs.
+  - Devuan `excalibur-backports` was expected to be needed for XLibre, but isn't: every Phase 2 build resolved XLibre 25.2 from Excalibur stable alone. It isn't enabled.
 - **Why:** Some chosen components aren't in Devuan stable. This doesn't conflict with DEC-006, which is about satori hosting its *own* repository.
 - **History:** 2026-09-28 decided. Same day (Phase 2), added rule 5 after finding that `brave-keyring` installs a globally trusted key, and recorded how the build applies the policy.
 
 ### DEC-027 X server: XLibre
 - **Status:** Decided, to be verified in Phase 2
 - **Why:** This is the maintainer's choice. XLibre is an actively developed fork of the Xorg server. It has dropped its libsystemd dependency, and the Devuan project publicly supports it.
-- **Source:** The XLibre Devuan repository (`xlibre-debian.github.io/devuan`), which needs Excalibur backports. Its packages are signed by an individual volunteer's key (DEC-026 applies). Devuan maintainers are working on first-party packages. Switch to those when they reach Devuan stable.
+- **Source:** The XLibre Devuan repository (`xlibre-debian.github.io/devuan`). XLibre's docs say Excalibur needs backports, but Phase 2 builds resolve without them. Its packages are signed by an individual volunteer's key (DEC-026 applies). Devuan maintainers are working on first-party packages. Switch to those when they reach Devuan stable.
 - **Risks:**
   - It depends on a volunteer-run repository.
   - Compatibility with the proprietary NVIDIA driver is undocumented.

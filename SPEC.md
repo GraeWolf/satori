@@ -50,7 +50,7 @@ In practice this means:
 | Session/seat | `elogind` + `libpam-elogind`, `polkitd` |
 | Kernel | Devuan/Debian stock `linux-image-amd64` |
 | Package manager | APT, unmodified |
-| Third-party repos | Brave (`brave-origin`), XLibre for Devuan (`xlibre`), Devuan `excalibur-backports`, each pinned to specific packages (DEC-026) |
+| Third-party repos | Brave (`brave-origin`, `brave-keyring`) and XLibre for Devuan (`xlibre*`), each pinned to specific packages (DEC-026) |
 
 ### 3.2 Build tooling
 - **Debian's live-build** (`1:20250505+deb13u1`, pinned by checksum), configured for Devuan (DEC-003). Devuan's own `live-build` package is a 2016 fork without UEFI support, so it isn't used.
