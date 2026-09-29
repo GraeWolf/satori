@@ -110,4 +110,16 @@ satori-run-once dunst
 satori-run-once copyq copyq --start-server
 satori-run-once blueman-applet
 satori-run-once xss-lock xss-lock --transfer-sleep-lock -- i3lock --nofork --color=1d2021
+
+# polybar's battery module defaults to BAT0 and ADP1, but laptops also use
+# BAT1, AC, ACAD and so on. Pass it the system's own names. Scope "Device"
+# marks the batteries of mice and other peripherals, not the laptop's.
+for supply in /sys/class/power_supply/*; do
+	[ "$(cat "${supply}/scope" 2>/dev/null)" = Device ] && continue
+	case "$(cat "${supply}/type" 2>/dev/null)" in
+		Battery) : "${SATORI_BATTERY:=${supply##*/}}" ;;
+		Mains)   : "${SATORI_ADAPTER:=${supply##*/}}" ;;
+	esac
+done
+export SATORI_BATTERY SATORI_ADAPTER
 satori-run-once polybar polybar --config=/usr/share/satori/polybar/config.ini satori

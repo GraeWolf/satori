@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+- The bar had no battery indicator on laptops whose battery or charger isn't
+  named `BAT0`/`ADP1`, polybar's defaults (for example `BAT1` and `ACAD`). The
+  herbstluftwm autostart now detects the names from `/sys/class/power_supply`.
+
 ## 0.1-rc1 (2026-09-29)
 
 First release candidate: the build system, desktop and installer (Phases 1-3).
