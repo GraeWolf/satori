@@ -160,16 +160,17 @@ When a decision changes, edit the entry in place and add a dated line to its
 ### DEC-023 Security and privacy defaults
 - **Status:** Decided
 - **Defaults** (all shipped by `satori-config`):
-  - **Firewall:** `/etc/satori/nftables.conf`, loaded at boot by the `satori-firewall` init script. Inbound traffic is dropped except loopback, established/related replies, and the ICMPv6 and DHCPv6 traffic IPv6 needs. Forwarding is dropped, and all outbound traffic is allowed.
+  - **Firewall:** `/etc/satori/nftables.conf`, loaded at boot by the `satori-firewall` init script. Inbound traffic is dropped except loopback, established/related replies, the ICMPv6 and DHCPv6 traffic IPv6 needs, and traffic from local container and VM bridges. Forwarding is allowed only from those bridges, for replies, and for ports a container engine publishes (DNAT); everything else forwarded is dropped. All outbound traffic is allowed.
     - Devuan's `nftables` package ships only a systemd unit, so nothing else would load a ruleset at boot.
     - The ruleset replaces only its own `inet satori` table and never runs `flush ruleset`, so rules from other software (libvirt, Docker) survive.
+    - Other software's accept rules can't override satori's drops (a drop in any nftables table is final), so the bridges are accepted in satori's own table: `podman*`, `cni-podman*`, `docker0`, `br-*` (Docker's user networks) and `virbr*` (libvirt). Without this, containers and VMs on a bridge network get no DNS and no network at all, which broke building satori on satori (DEC-033). Traffic from outside reaches a bridge only through a port someone publishes deliberately (`podman run -p`).
     - `satori-firewall` starts after `nftables`, in case `orphan-sysvinit-scripts` is installed later: that script's default config flushes everything.
   - **Nothing listens on the network.** The only listener is `chronyd` on loopback, and there's no SSH server. The smoke test fails if anything else listens beyond loopback.
   - **No `popularity-contest`.**
   - **Firefox ESR:** `/usr/share/firefox-esr/distribution/policies.json` turns off telemetry, studies, Pocket, and sponsored tiles and suggestions.
   - **Brave Origin:** Origin already removes most telemetry. The binary still honours `BraveP3AEnabled`, `BraveStatsPingEnabled`, `BraveWebDiscoveryEnabled` and `MetricsReportingEnabled`, so `/etc/brave/policies/managed/satori.json` sets all four to false as a backstop.
   - **NetworkManager:** `/etc/NetworkManager/conf.d/satori-privacy.conf` sets `wifi.scan-rand-mac-address=yes` explicitly. It's NetworkManager's default, pinned so a default change can't undo it.
-- **History:** 2026-09-28 recorded (previously only in SPEC.md §3.6). Same day, added the Brave Origin policy check (DEC-028). 2026-09-29 (Phase 2): implemented, with the firewall and listener checks added to the smoke test.
+- **History:** 2026-09-28 recorded (previously only in SPEC.md §3.6). Same day, added the Brave Origin policy check (DEC-028). 2026-09-29 (Phase 2): implemented, with the firewall and listener checks added to the smoke test. 2026-09-29: the maintainer approved accepting local container and VM bridges and published ports, after the firewall stopped `scripts/build.sh` resolving names on satori.
 
 ### DEC-024 Time sync: chrony
 - **Status:** Decided

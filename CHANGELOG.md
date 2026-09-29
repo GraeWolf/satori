@@ -7,9 +7,14 @@
   named `BAT0`/`ADP1`, polybar's defaults (for example `BAT1` and `ACAD`). The
   herbstluftwm autostart now detects the names from `/sys/class/power_supply`.
 - `scripts/build.sh` failed on satori itself: the container couldn't resolve
-  names, because satori's firewall (DEC-023) drops the forwarded and inbound
+  names, because satori's firewall (DEC-023) dropped the forwarded and inbound
   traffic that a container bridge network needs. The build container now uses
   the host's network.
+
+### Changed
+- Firewall (DEC-023): traffic from local container and VM bridges (podman,
+  Docker, libvirt) is accepted, as are ports a container engine publishes.
+  Before, containers and VMs on a bridge network had no network at all.
 
 ## 0.1-rc1 (2026-09-29)
 

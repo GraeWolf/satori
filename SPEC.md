@@ -93,7 +93,7 @@ a RAM-sized swapfile and configures resume, so hibernation works out of the box
 Recorded as DEC-022 (accounts) and DEC-023 (everything else).
 
 - Installer offers LUKS2 full-disk encryption (the root filesystem and swapfile are encrypted; `/boot` isn't).
-- nftables firewall enabled: inbound traffic denied except established/related, all outbound allowed.
+- nftables firewall enabled: inbound traffic denied except established/related and local container/VM bridges, forwarding only for those bridges and deliberately published ports, all outbound allowed (DEC-023).
 - `sudo` for the installer-created user; the root account is locked.
 - No `popularity-contest`. Firefox ESR policies turn off telemetry, studies, and sponsored content. Brave Origin's remaining telemetry, if any, is switched off with managed policies.
 - NetworkManager uses randomised MAC addresses when scanning Wi-Fi.
