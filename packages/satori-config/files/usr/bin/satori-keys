@@ -1,3 +1,0 @@
-#!/bin/sh
-# Show satori's keybindings (Mod+F1).
-exec rofi -dmenu -i -no-custom -p keys < /usr/share/satori/keybindings.txt >/dev/null

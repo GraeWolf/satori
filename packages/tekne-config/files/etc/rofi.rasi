@@ -1,0 +1,10 @@
+/* Tekne's rofi defaults (tekne-config, DEC-034). rofi reads this file
+   first; your ~/.config/rofi/config.rasi is read after it and wins, including
+   its own @theme. */
+configuration {
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+    terminal:   "x-terminal-emulator";
+}
+
+@theme "/usr/share/tekne/rofi/tokyonight.rasi"

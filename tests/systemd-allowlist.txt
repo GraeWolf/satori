@@ -1,4 +1,4 @@
-# Packages whose names contain "systemd" but are allowed in satori images
+# Packages whose names contain "systemd" but are allowed in Tekne images
 # (SPEC.md §4, rule 3). One package per line; every entry needs a comment
 # saying why it's unavoidable.
 #

@@ -1,14 +1,14 @@
 #!/bin/sh
-# os-release (DEC-034). satori-branding replaces /usr/lib/os-release, but
+# os-release (DEC-034). tekne-branding replaces /usr/lib/os-release, but
 # live-build's bootstrap stage turns /etc/os-release into a copy of Devuan's
 # file (plus IMAGE_ID=live), held in place by a local diversion that it removes
 # after the hooks, leaving the copy. That copy would reach installed systems
-# too, and satori-branding updates would never reach it. So put back the
+# too, and tekne-branding updates would never reach it. So put back the
 # symlink base-files ships.
 #
-# Then check Phase 4's acceptance criterion (SPEC §7): os-release says satori,
+# Then check Phase 4's acceptance criterion (SPEC §7): os-release says Tekne,
 # and still does after base-files is reinstalled. Also check the GRUB theme
-# reached /boot, where satori-install finds it.
+# reached /boot, where tekne-install finds it.
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
@@ -17,15 +17,15 @@ ln -s ../usr/lib/os-release /etc/os-release
 
 os_id() { (. /etc/os-release && echo "${ID}"); }
 
-[ "$(os_id)" = satori ] || { echo "FAIL: os-release ID is $(os_id), not satori"; exit 1; }
+[ "$(os_id)" = tekne ] || { echo "FAIL: os-release ID is $(os_id), not tekne"; exit 1; }
 apt-get install -y --reinstall base-files
 # live-build's diversion sends base-files' own /etc/os-release symlink here
 # while it's active; it's the same symlink, so drop the stray copy.
 rm -f /etc/os-release.debootstrap
-[ "$(os_id)" = satori ] || { echo "FAIL: reinstalling base-files restored os-release ID $(os_id)"; exit 1; }
+[ "$(os_id)" = tekne ] || { echo "FAIL: reinstalling base-files restored os-release ID $(os_id)"; exit 1; }
 [ "$(readlink /etc/os-release)" = ../usr/lib/os-release ] \
 	|| { echo "FAIL: /etc/os-release isn't the symlink to /usr/lib/os-release"; exit 1; }
-dpkg-divert --list /usr/lib/os-release | grep -q satori-branding \
-	|| { echo "FAIL: /usr/lib/os-release isn't diverted by satori-branding"; exit 1; }
-[ -f /boot/grub/themes/satori/theme.txt ] || { echo "FAIL: GRUB theme missing from /boot"; exit 1; }
-echo "OK: os-release is satori's and survives reinstalling base-files; GRUB theme in /boot"
+dpkg-divert --list /usr/lib/os-release | grep -q tekne-branding \
+	|| { echo "FAIL: /usr/lib/os-release isn't diverted by tekne-branding"; exit 1; }
+[ -f /boot/grub/themes/tekne/theme.txt ] || { echo "FAIL: GRUB theme missing from /boot"; exit 1; }
+echo "OK: os-release is tekne's and survives reinstalling base-files; GRUB theme in /boot"

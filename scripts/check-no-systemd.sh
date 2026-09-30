@@ -1,7 +1,7 @@
 #!/bin/sh
 # Rules 2 and 3 of the no-systemd rule (SPEC.md §4), checked against a
 # live-build package manifest (lines of "package<TAB>version").
-#   scripts/check-no-systemd.sh out/satori-<version>-amd64.packages
+#   scripts/check-no-systemd.sh out/tekne-<version>-amd64.packages
 set -eu
 
 MANIFEST="${1:?usage: $0 MANIFEST}"

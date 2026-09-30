@@ -2,21 +2,29 @@
 
 ## Unreleased
 
+### Changed
+- **Renamed from satori to Tekne** (DEC-008): packages are now `tekne-*`,
+  and so are paths, commands, the firewall table and the ISO name. To move an
+  installed satori system over, build and run
+  `sudo apt install --purge ./out/packages/tekne-{apt-sources,branding,config,desktop}_*.deb`;
+  it removes the `satori-*` packages cleanly. The placeholder art is now a
+  geometric T instead of an ensō.
+
 ### Added
 - Kernel from Devuan's `excalibur-backports` (DEC-036): 7.1 instead of
-  stable's 6.12. `satori-apt-sources` adds the suite, pinned to the kernel
+  stable's 6.12. `tekne-apt-sources` adds the suite, pinned to the kernel
   packages only. Fixes ASUS ROG laptop keyboards that `hid-asus` failed to set
   up on 6.12 (dead keyboard, even at the LUKS prompt).
-- Branding (Phase 4, DEC-034): the `satori-branding` package. `os-release`
-  says satori (Devuan's copy is diverted, so `base-files` upgrades can't bring
+- Branding (Phase 4, DEC-034): the `tekne-branding` package. `os-release`
+  says Tekne (Devuan's copy is diverted, so `base-files` upgrades can't bring
   it back), and ships a GRUB theme for the live ISO and installed systems, a
-  wallpaper and a logo. The artwork is a placeholder ensō, rendered from SVGs in
+  wallpaper and a logo. The artwork is a placeholder mark, rendered from SVGs in
   `branding/` (CC-BY-SA-4.0).
 - Tokyo Night colours for herbstluftwm, polybar, rofi, dunst, alacritty and the
   lock screen; dark Adwaita with Papirus icons for GTK apps.
-- `satori-terminal`: alacritty with satori's config unless you have your own.
+- `tekne-terminal`: alacritty with Tekne's config unless you have your own.
   It's the `x-terminal-emulator` alternative, which had been xterm's `lxterm`.
-- Live ISO boot menu: "satori live" and "satori live (safe graphics)"
+- Live ISO boot menu: "Tekne live" and "Tekne live (safe graphics)"
   (`nomodeset`) replace live-build's "Live system" entries and Debian splash.
 - The build container installs `librsvg2-bin`, to render the artwork.
 
@@ -24,20 +32,20 @@
 - The bar had no battery indicator on laptops whose battery or charger isn't
   named `BAT0`/`ADP1`, polybar's defaults (for example `BAT1` and `ACAD`). The
   herbstluftwm autostart now detects the names from `/sys/class/power_supply`.
-- `scripts/build.sh` failed on satori itself: the container couldn't resolve
-  names, because satori's firewall (DEC-023) dropped the forwarded and inbound
+- `scripts/build.sh` failed on Tekne itself: the container couldn't resolve
+  names, because Tekne's firewall (DEC-023) dropped the forwarded and inbound
   traffic that a container bridge network needs. The build container now uses
   the host's network.
-- `service satori-firewall status` said "NOT loaded" when run without root,
+- `service tekne-firewall status` said "NOT loaded" when run without root,
   because nft can't read the ruleset then. It now says it needs root.
 
 ### Changed
 - Firewall (DEC-023): traffic from local container and VM bridges (podman,
   Docker, libvirt) is accepted, as are ports a container engine publishes.
   Before, containers and VMs on a bridge network had no network at all.
-- `satori-config` now declares the packages its helper scripts call
+- `tekne-config` now declares the packages its helper scripts call
   (herbstluftwm, rofi, maim, xclip and others), instead of relying on
-  `satori-desktop` to install them.
+  `tekne-desktop` to install them.
 - The no-systemd allowlist (DEC-010) is empty: `libsystemd0` is no longer in
   the image, because Devuan's `libelogind-compat` replaces it.
 

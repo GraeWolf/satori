@@ -1,0 +1,6 @@
+tekne-desktop (0.1) unstable; urgency=medium
+
+  * Initial release of the desktop metapackage; sets Brave Origin as the
+    default x-www-browser on first install.
+
+ -- Tekne project <noreply@tekne.invalid>  Mon, 28 Sep 2026 12:00:00 +0000

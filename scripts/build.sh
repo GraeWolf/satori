@@ -1,8 +1,8 @@
 #!/bin/sh
-# Build the satori ISO inside the pinned build container (container/Containerfile).
+# Build the Tekne ISO inside the pinned build container (container/Containerfile).
 # live-build needs chroots and mounts, so this runs a privileged container as root:
 #   sudo scripts/build.sh                   packages and ISO
-#   sudo scripts/build.sh --packages-only   just satori's .debs, in out/packages/
+#   sudo scripts/build.sh --packages-only   just Tekne's .debs, in out/packages/
 #                                           (about a minute; for updating an
 #                                           installed system, DEC-006)
 # Uses podman if installed, else docker; override with CONTAINER_ENGINE=docker.
@@ -18,7 +18,7 @@ esac
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${REPO}/out"
-IMAGE="localhost/satori-build:latest"
+IMAGE="localhost/tekne-build:latest"
 
 [ "$(id -u)" -eq 0 ] || { echo "error: run as root: sudo $0" >&2; exit 1; }
 
@@ -54,26 +54,26 @@ else
 fi
 
 # Both steps use the host's network, so the build works whatever the host's
-# firewall does to bridge networks (satori's accepts them since DEC-023's
+# firewall does to bridge networks (Tekne's accepts them since DEC-023's
 # 2026-09-29 amendment; others may not). The build needs no isolation.
 echo "==> Building container image with ${ENGINE}"
 "${ENGINE}" build --network=host -t "${IMAGE}" -f "${REPO}/container/Containerfile" "${REPO}/container"
 IMAGE_ID="$("${ENGINE}" image inspect --format '{{.Id}}' "${IMAGE}")"
 BASE_IMAGE="$(sed -n 's/^FROM[[:space:]]*//p' "${REPO}/container/Containerfile")"
 
-echo "==> Building satori ${VERSION}"
+echo "==> Building Tekne ${VERSION}"
 mkdir -p "${OUT}"
 status=0
 "${ENGINE}" run --rm --privileged --network=host \
 	-v "${REPO}:/src:ro" \
 	-v "${OUT}:/out" \
-	-e SATORI_VERSION="${VERSION}" \
-	-e SATORI_PKG_VERSION="${PKG_VERSION}" \
-	-e SATORI_PACKAGES_ONLY="${PACKAGES_ONLY}" \
-	-e SATORI_GIT_SHA="${GIT_SHA}" \
-	-e SATORI_GIT_DIRTY="${GIT_DIRTY}" \
-	-e SATORI_BASE_IMAGE="${BASE_IMAGE}" \
-	-e SATORI_IMAGE_ID="${IMAGE_ID}" \
+	-e TEKNE_VERSION="${VERSION}" \
+	-e TEKNE_PKG_VERSION="${PKG_VERSION}" \
+	-e TEKNE_PACKAGES_ONLY="${PACKAGES_ONLY}" \
+	-e TEKNE_GIT_SHA="${GIT_SHA}" \
+	-e TEKNE_GIT_DIRTY="${GIT_DIRTY}" \
+	-e TEKNE_BASE_IMAGE="${BASE_IMAGE}" \
+	-e TEKNE_IMAGE_ID="${IMAGE_ID}" \
 	"${IMAGE}" /src/scripts/build-in-container.sh || status=$?
 
 # Hand outputs back to the invoking user so tests run without root. The
@@ -91,5 +91,5 @@ fi
 if [ "${PACKAGES_ONLY}" = yes ]; then
 	echo "==> Done: packages ${PKG_VERSION} in ${OUT}/packages/"
 else
-	echo "==> Done: ${OUT}/satori-${VERSION}-amd64.iso"
+	echo "==> Done: ${OUT}/tekne-${VERSION}-amd64.iso"
 fi

@@ -8,5 +8,5 @@ sudo
 opensysusers
 
 # Third-party repositories, keys and pins (DEC-026). The desktop itself is
-# installed by config/hooks/normal/0500-satori-desktop.hook.chroot.
-satori-apt-sources
+# installed by config/hooks/normal/0500-tekne-desktop.hook.chroot.
+tekne-apt-sources

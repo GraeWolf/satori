@@ -1,13 +1,13 @@
 #!/bin/sh
-# Runs as root inside an installed satori system booted by tests/smoke/install.py
+# Runs as root inside an installed Tekne system booted by tests/smoke/install.py
 # (delivered through QEMU fw_cfg). Prints KEY=VALUE lines; install.py compares
 # them with what the answers file asked for (docs/installer.md §6).
 
 echo "PID1=$(cat /proc/1/comm)"
 [ -d /run/systemd/system ] && echo RUN_SYSTEMD=present || echo RUN_SYSTEMD=absent
 echo "SYSTEMD_PKGS=$(dpkg-query -W -f '${Package}\n' | grep -c systemd)"
-echo "LIVE_PKGS=$(dpkg-query -W -f '${Package} ${db:Status-Status}\n' 'live-*' satori-installer 2>/dev/null | awk '$2 == "installed"' | wc -l)"
-echo "LIVE_FILES=$(ls /usr/lib/live/config/0161-satori-autologin /usr/local/sbin/satori-serial-getty /usr/share/satori-installer 2>/dev/null | wc -l)"
+echo "LIVE_PKGS=$(dpkg-query -W -f '${Package} ${db:Status-Status}\n' 'live-*' tekne-installer 2>/dev/null | awk '$2 == "installed"' | wc -l)"
+echo "LIVE_FILES=$(ls /usr/lib/live/config/0161-tekne-autologin /usr/local/sbin/tekne-serial-getty /usr/share/tekne-installer 2>/dev/null | wc -l)"
 echo "AUTOLOGIN=$(grep -c -- '--autologin' /etc/inittab)"
 
 echo "ROOT_FS=$(findmnt -no FSTYPE /)"
@@ -28,7 +28,7 @@ case "$(uname -r) $(dpkg-query -W -f '${Version}' linux-image-amd64)" in
 	*bpo*) echo "KERNEL=backports" ;;
 	*)     echo "KERNEL=stable" ;;
 esac
-echo "GRUB_THEME=$([ -f /boot/grub/themes/satori/theme.txt ] && echo present || echo missing)"
+echo "GRUB_THEME=$([ -f /boot/grub/themes/tekne/theme.txt ] && echo present || echo missing)"
 echo "HOSTNAME=$(cat /etc/hostname)"
 echo "TIMEZONE=$(cat /etc/timezone)"
 echo "LANG=$(sed -n 's/^LANG=//p' /etc/default/locale | tr -d '"')"
@@ -40,7 +40,7 @@ echo "USER_GROUPS=$(id -nG tester | tr ' ' ',')"
 echo "KEYRING_DAEMON=$(pgrep -u tester -x gnome-keyring-d >/dev/null && echo running || echo missing)"
 # pam_gnome_keyring needs XDG_RUNTIME_DIR, which pam_elogind sets up.
 echo "PAM_ORDER=$(awk '/pam_elogind/ { e = NR } /pam_gnome_keyring/ { g = NR } END { print (e && g && e < g) ? "ok" : "wrong" }' /etc/pam.d/common-session)"
-# Then do what satori-session does in the X session (start the secrets
+# Then do what tekne-session does in the X session (start the secrets
 # component on a session bus) and ask over D-Bus whether the login keyring is
 # unlocked. The daemon creates it on first use, from the login password.
 uid="$(id -u tester)"
@@ -54,5 +54,5 @@ case "${locked}" in
 	true)  echo "LOGIN_KEYRING=locked" ;;
 	*)     echo "LOGIN_KEYRING=missing" ;;
 esac
-echo "FIREWALL=$(nft list chain inet satori input 2>/dev/null | grep -q 'policy drop' && echo loaded || echo missing)"
+echo "FIREWALL=$(nft list chain inet tekne input 2>/dev/null | grep -q 'policy drop' && echo loaded || echo missing)"
 echo "GRUB_PKG=$(dpkg-query -W -f '${Package} ${db:Status-Status}\n' grub-pc grub-efi-amd64 2>/dev/null | awk '$2 == "installed" { print $1 }')"

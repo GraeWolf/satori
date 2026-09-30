@@ -1,4 +1,4 @@
-# satori-installer
+# tekne-installer
 
 A gum-based TUI that installs the running live system to a single whole disk,
 with optional LUKS2 encryption, on BIOS or UEFI machines. Scope is fixed by DEC-005.
@@ -15,8 +15,8 @@ the running root. Changes the live session makes at runtime therefore never
 reach the installed system: the live user, autologin, and files live-config
 generates at boot.
 
-Implementation: `/usr/sbin/satori-install`, a bash script using `gum` for all
-prompts, packaged as `satori-installer` (live image only). The interactive and
+Implementation: `/usr/sbin/tekne-install`, a bash script using `gum` for all
+prompts, packaged as `tekne-installer` (live image only). The interactive and
 unattended paths share every validation and install step.
 
 ## 2. Flow
@@ -28,7 +28,7 @@ unattended paths share every validation and install step.
 2. **Target disk.** The user picks a disk with `gum choose`, which shows model, size, and existing partitions.
 3. **Encryption.** "Encrypt the disk?" (`gum confirm`). If yes, the user enters a passphrase twice (`gum input --password`), with a minimum length and a match check.
 4. **System settings**
-   - Hostname (default `satori`)
+   - Hostname (default `tekne`)
    - Timezone (a filtered list from `/usr/share/zoneinfo`)
    - Locale (a curated short list, with an option to type one)
    - Keyboard layout (defaults to the live session's layout)
@@ -41,14 +41,14 @@ unattended paths share every validation and install step.
     - `fstab` and `crypttab` by UUID
     - Hostname, `/etc/hosts`, timezone, locale, and keyboard (`/etc/default/keyboard`)
     - Create the user, lock root
-    - Purge the live packages (`live-boot*`, `live-config*`, `live-tools`) and `satori-installer`. Remove satori's live-only files (`0161-satori-autologin`, `satori-serial-getty`), and restore `/etc/inittab` from `/usr/share/sysvinit/inittab`, which drops the live image's serial test getty.
+    - Purge the live packages (`live-boot*`, `live-config*`, `live-tools`) and `tekne-installer`. Remove Tekne's live-only files (`0161-tekne-autologin`, `tekne-serial-getty`), and restore `/etc/inittab` from `/usr/share/sysvinit/inittab`, which drops the live image's serial test getty.
     - Create the swapfile (DEC-017): `/swapfile`, size = RAM rounded up to the next GiB, mode 0600, created with `mkswap --file` so it has no holes
     - Configure resume: `resume=UUID=<root fs UUID> resume_offset=<offset>` go on the kernel command line (`GRUB_CMDLINE_LINUX`), because initramfs-tools reads `resume_offset` only from there. The offset is the first physical extent from `filefrag -v /swapfile`. `/etc/initramfs-tools/conf.d/resume` gets `RESUME=UUID=…`, which makes sure the resume hook is in the initramfs.
-    - Install `grub-pc` (BIOS) or `grub-efi-amd64` (UEFI) offline from `.deb`s the build downloads into `/usr/share/satori-installer/debs/`. The two conflict, so neither can be in the live image; their `-bin` packages are. debconf is preseeded so future GRUB upgrades reinstall to the right disk, and on UEFI keep the removable-media copy.
+    - Install `grub-pc` (BIOS) or `grub-efi-amd64` (UEFI) offline from `.deb`s the build downloads into `/usr/share/tekne-installer/debs/`. The two conflict, so neither can be in the live image; their `-bin` packages are. debconf is preseeded so future GRUB upgrades reinstall to the right disk, and on UEFI keep the removable-media copy.
     - `cryptsetup`, `cryptsetup-initramfs`, `efibootmgr` and the GRUB package are marked manually installed, so `apt autoremove` can't take them.
     - Run `update-initramfs -u -k all`
     - Run `grub-install` (UEFI: with an NVRAM entry, plus `--removable`; `efivarfs` is mounted first if needed), then `update-grub`
-11. **Finish.** Unmount, close LUKS, copy the install log to the target's `/var/log/satori-installer.log`, and offer to reboot.
+11. **Finish.** Unmount, close LUKS, copy the install log to the target's `/var/log/tekne-installer.log`, and offer to reboot.
 
 ## 3. Partition layouts (GPT in both modes)
 
@@ -66,7 +66,7 @@ initramfs) is needed.
 
 - `set -Eeuo pipefail` plus an `ERR`/`EXIT` trap. The trap unmounts everything under the target mountpoint, closes the LUKS mapping, and prints the log path.
 - There's no rollback: once step 7 starts, the disk has been wiped. Each run starts from scratch, so a failed install is fixed by re-running the installer.
-- Every command and its output goes to `/var/log/satori-installer.log`, which never contains passphrases or passwords.
+- Every command and its output goes to `/var/log/tekne-installer.log`, which never contains passphrases or passwords.
 - Passwords are passed to `cryptsetup` and `chpasswd` on stdin, never as command-line arguments.
 
 ## 5. UX rules
@@ -77,7 +77,7 @@ initramfs) is needed.
 
 ## 6. Unattended mode (for tests)
 
-`satori-install --answers <file>` reads a `KEY=value` answers file: `DISK=`,
+`tekne-install --answers <file>` reads a `KEY=value` answers file: `DISK=`,
 `CONFIRM_DISK=`, `ENCRYPT=`, `LUKS_PASSPHRASE=`, `HOSTNAME=`, `TZ=`, `LOCALE=`,
 `KEYMAP=`, `FULLNAME=`, `USERNAME=`, `PASSWORD=`, and `SERIAL_CONSOLE=`. The last
 adds a serial getty and `console=ttyS0` to the installed system, for tests. The
@@ -85,10 +85,10 @@ file is parsed, never sourced, and unknown keys are an error. Every value goes
 through the same validation as the interactive prompts.
 
 For automated tests, the answers file reaches the live system through **QEMU
-fw_cfg** (`-fw_cfg name=opt/satori/answers,file=…`). The `satori-autoinstall`
-init script (in `satori-installer`) runs the installer unattended and then
+fw_cfg** (`-fw_cfg name=opt/tekne/answers,file=…`). The `tekne-autoinstall`
+init script (in `tekne-installer`) runs the installer unattended and then
 powers off, but only when **both** of these hold:
-- the live system was booted from the "serial console" GRUB entry (`satori.serial`)
+- the live system was booted from the "serial console" GRUB entry (`tekne.serial`)
 - the fw_cfg answers file exists
 
 fw_cfg exists only in QEMU, so an automated install can never erase a disk on
@@ -104,7 +104,7 @@ virtual disks. It then boots each installed disk, logs in over serial, and runs
 - `lsblk` shows the expected layout.
 - No live-* packages remain.
 - Hostname, timezone, locale and keyboard match the answers file; root is locked; the user is in `sudo`.
-- satori's firewall is loaded, and the right GRUB package is installed.
+- Tekne's firewall is loaded, and the right GRUB package is installed.
 - The swapfile is active and RAM-sized, and the kernel's `resume=`/`resume_offset=` match the root filesystem and swapfile.
 
 Then it hibernates each installed system with `loginctl hibernate`, boots the disk again, and checks that the same session resumed (a token written to `/dev/shm` before hibernating is still there).

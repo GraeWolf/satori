@@ -4,11 +4,11 @@
     tests/smoke/install.py [bios|uefi|all] [plain|luks|all] [--keep] [ISO]
 
 Defaults to the full matrix, {BIOS, UEFI} x {plain, LUKS}, and the newest
-out/satori-*-amd64.iso (SPEC.md §5.2, docs/installer.md §6). For each case:
+out/tekne-*-amd64.iso (SPEC.md §5.2, docs/installer.md §6). For each case:
 
   1. Boot the ISO with a blank virtual disk. Press "s" for the serial-console
      GRUB entry and pass an answers file through QEMU fw_cfg: together these
-     make the live system run satori-install unattended, then power off.
+     make the live system run tekne-install unattended, then power off.
   2. Boot the installed disk, type the LUKS passphrase if needed, log in over
      serial, and run installed-checks.sh (also passed via fw_cfg) as root.
   3. Hibernate (DEC-017): write a random token to /dev/shm (RAM only), run
@@ -44,18 +44,18 @@ CMD_TIMEOUT = 120
 ANSWERS = {
     "DISK": "/dev/vda",
     "CONFIRM_DISK": "vda",
-    "HOSTNAME": "satori-test",
+    "HOSTNAME": "tekne-test",
     "TZ": "Europe/Berlin",
     "LOCALE": "en_GB.UTF-8",
     "KEYMAP": "gb",
     "FULLNAME": "Test User",
     "USERNAME": "tester",
     "PASSWORD": "tester-pw-123",
-    "LUKS_PASSPHRASE": "satori-test-luks",
+    "LUKS_PASSPHRASE": "tekne-test-luks",
     "SERIAL_CONSOLE": "yes",
 }
 
-BEGIN, END = "__SATORI" + "_BEGIN__", "__SATORI" + "_END__"
+BEGIN, END = "__TEKNE" + "_BEGIN__", "__TEKNE" + "_END__"
 
 
 def expected(mode, luks):
@@ -68,7 +68,7 @@ def expected(mode, luks):
         "HOSTNAME": ANSWERS["HOSTNAME"], "TIMEZONE": ANSWERS["TZ"],
         "LANG": ANSWERS["LOCALE"], "KEYMAP": ANSWERS["KEYMAP"],
         "ROOT_PASSWORD": "L", "FIREWALL": "loaded",
-        "OS_ID": "satori", "GRUB_THEME": "present", "KERNEL": "backports",
+        "OS_ID": "tekne", "GRUB_THEME": "present", "KERNEL": "backports",
         "GRUB_PKG": "grub-efi-amd64" if mode == "uefi" else "grub-pc",
         "HIBERNATE": "resumed",
         "KEYRING_DAEMON": "running", "LOGIN_KEYRING": "unlocked", "PAM_ORDER": "ok",
@@ -80,7 +80,7 @@ def install(mode, luks, iso, disk, vars_path, answers_path, workdir):
     cmd = qemu_command(mode, vars_path, MEMORY_MIB, cpus=4) + [
         "-cdrom", iso, "-boot", "d",
         "-drive", f"file={disk},if=virtio,format=qcow2",
-        "-fw_cfg", f"name=opt/satori/answers,file={answers_path}",
+        "-fw_cfg", f"name=opt/tekne/answers,file={answers_path}",
     ]
     with open(log_path, "w") as log:
         proc = start(cmd)
@@ -88,7 +88,7 @@ def install(mode, luks, iso, disk, vars_path, answers_path, workdir):
         try:
             con.expect(SERIAL_ENTRY_TITLE, 60)
             con.send(SERIAL_ENTRY_HOTKEY)
-            result = con.expect_any(["SATORI-INSTALL: SUCCESS", "SATORI-INSTALL: FAILED"], INSTALL_TIMEOUT)
+            result = con.expect_any(["TEKNE-INSTALL: SUCCESS", "TEKNE-INSTALL: FAILED"], INSTALL_TIMEOUT)
             stop(proc, 120)
         finally:
             if proc.poll() is None:
@@ -102,11 +102,11 @@ def boot_and_check(mode, luks, disk, vars_path, workdir):
     cmd = qemu_command(mode, vars_path, MEMORY_MIB) + [
         "-boot", "c",
         "-drive", f"file={disk},if=virtio,format=qcow2",
-        "-fw_cfg", f"name=opt/satori/check,file={CHECKS}",
+        "-fw_cfg", f"name=opt/tekne/check,file={CHECKS}",
     ]
     user, password = ANSWERS["USERNAME"], ANSWERS["PASSWORD"]
-    check = ("sh -c 'modprobe qemu_fw_cfg; echo __SATORI\"\"_BEGIN__; "
-             "sh /sys/firmware/qemu_fw_cfg/by_name/opt/satori/check/raw; echo __SATORI\"\"_END__'")
+    check = ("sh -c 'modprobe qemu_fw_cfg; echo __TEKNE\"\"_BEGIN__; "
+             "sh /sys/firmware/qemu_fw_cfg/by_name/opt/tekne/check/raw; echo __TEKNE\"\"_END__'")
     with open(log_path, "w") as log:
         proc = start(cmd)
         con = Serial(proc, log)
@@ -128,7 +128,7 @@ def boot_and_check(mode, luks, disk, vars_path, workdir):
 
             # Hibernate: the VM powers itself off once the image is written.
             token = secrets.token_hex(8)
-            con.send(f"echo {token} > /dev/shm/satori-hibernate-test; "
+            con.send(f"echo {token} > /dev/shm/tekne-hibernate-test; "
                      f"echo {password} | sudo -S -p '' loginctl hibernate\n")
             try:
                 proc.wait(timeout=HIBERNATE_TIMEOUT)
@@ -164,7 +164,7 @@ def boot_and_check(mode, luks, disk, vars_path, workdir):
                     pass
             if seen == "$ ":
                 con.expect("$ ", CMD_TIMEOUT)
-                con.send("cat /dev/shm/satori-hibernate-test\n")
+                con.send("cat /dev/shm/tekne-hibernate-test\n")
                 seen = con.expect_any([token, "login:", "No such file"], CMD_TIMEOUT)
             results["HIBERNATE"] = "resumed" if seen == token else "cold boot (resume failed)"
             if seen == token:

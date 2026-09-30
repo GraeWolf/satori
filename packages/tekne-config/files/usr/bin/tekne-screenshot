@@ -1,0 +1,18 @@
+#!/bin/sh
+# Screenshots (Mod+p full screen, Mod+Shift+p select an area). Saves to
+# ~/Pictures/Screenshots and copies the image to the clipboard.
+#   tekne-screenshot [full|select]
+set -eu
+
+dir="${XDG_PICTURES_DIR:-${HOME}/Pictures}/Screenshots"
+mkdir -p "${dir}"
+file="${dir}/$(date +%Y-%m-%d_%H-%M-%S).png"
+
+case "${1:-full}" in
+	select) maim --select "${file}" ;;
+	full)   maim "${file}" ;;
+	*)      echo "usage: $0 [full|select]" >&2; exit 2 ;;
+esac
+
+xclip -selection clipboard -target image/png < "${file}"
+notify-send "Screenshot saved" "${file}"

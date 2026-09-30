@@ -1,13 +1,13 @@
 # Desktop Stack
 
 herbstluftwm on Xorg. Everything a desktop environment would normally provide is
-chosen explicitly here. All of it is pulled in by the `satori-desktop` metapackage
-and configured by `satori-config`.
+chosen explicitly here. All of it is pulled in by the `tekne-desktop` metapackage
+and configured by `tekne-config`.
 
 > Phase 2 checked every package: all exist in Excalibur (or in the Brave and
 > XLibre repositories, DEC-026), and resolving the whole stack from an empty
 > system pulls in no systemd package. Substitutions are in the Notes column.
-> `packages/satori-desktop/debian/control` is the authoritative list.
+> `packages/tekne-desktop/debian/control` is the authoritative list.
 
 ## 1. Components
 
@@ -27,18 +27,18 @@ and configured by `satori-config`.
 | Audio | `pipewire`, `pipewire-pulse`, `wireplumber`, `pavucontrol`, `pamixer` | DEC-012 |
 | Bluetooth | `bluez`, `blueman` | |
 | Power/laptop | elogind (lid/suspend/hibernate, DEC-017), `brightnessctl`, `tlp` | Check that tlp has no systemd dependency |
-| Terminal | `alacritty` | Started through `satori-terminal`, satori's `x-terminal-emulator` alternative, which adds satori's config (DEC-034) |
+| Terminal | `alacritty` | Started through `tekne-terminal`, Tekne's `x-terminal-emulator` alternative, which adds Tekne's config (DEC-034) |
 | File manager | `thunar` + `gvfs`, `tumbler` | Removable media and trash. `tumbler` provides Thunar's thumbnails |
 | Editor | `neovim` (CLI) + `mousepad` (GUI) | |
-| Browser | `brave-origin` (default), `firefox-esr` (fallback) | DEC-028. Brave Origin from Brave's APT repo (DEC-026). Default set by `/etc/xdg/mimeapps.list` (satori-config) and by pointing the `x-www-browser` alternative at `brave-origin-stable` on first install (satori-desktop postinst). Firefox policies in satori-config |
-| Keyring | `gnome-keyring`, `libpam-gnome-keyring` | DEC-030. Secret Service for Brave, Melia, Firefox and NetworkManager. Unlocked by PAM at tty1 login, through satori-config's `satori-gnome-keyring` PAM profile (Excalibur's own profile covers password changes only) |
-| Email | Melia, not preinstalled | DEC-029. `satori-get-melia` downloads and verifies the signed `.deb` on demand |
-| Screenshots | `maim` + `xclip` | `satori-screenshot`, bound to `Mod+p` / `Mod+Shift+p` |
+| Browser | `brave-origin` (default), `firefox-esr` (fallback) | DEC-028. Brave Origin from Brave's APT repo (DEC-026). Default set by `/etc/xdg/mimeapps.list` (tekne-config) and by pointing the `x-www-browser` alternative at `brave-origin-stable` on first install (tekne-desktop postinst). Firefox policies in tekne-config |
+| Keyring | `gnome-keyring`, `libpam-gnome-keyring` | DEC-030. Secret Service for Brave, Melia, Firefox and NetworkManager. Unlocked by PAM at tty1 login, through tekne-config's `tekne-gnome-keyring` PAM profile (Excalibur's own profile covers password changes only) |
+| Email | Melia, not preinstalled | DEC-029. `tekne-get-melia` downloads and verifies the signed `.deb` on demand |
+| Screenshots | `maim` + `xclip` | `tekne-screenshot`, bound to `Mod+p` / `Mod+Shift+p` |
 | Clipboard | `xclip`, `copyq` | `clipmenu` isn't packaged in Excalibur; CopyQ replaces it (`Mod+v`). `cliphist` and `clipman` are Wayland-only |
 | Images/PDF | `feh` (also sets wallpaper), `zathura` | |
 | Fonts | `fonts-noto`, `fonts-noto-color-emoji`, `fonts-jetbrains-mono` | |
 | Theming | Tokyo Night colours; dark Adwaita (GTK) and `papirus-icon-theme`, `lxappearance` | DEC-034. No Tokyo Night GTK theme is packaged in Devuan |
-| Firewall | `nftables` + satori ruleset | DEC-023 |
+| Firewall | `nftables` + Tekne ruleset | DEC-023 |
 | Time sync | `chrony` | DEC-024. Must not use systemd-timesyncd |
 
 Developer tools aren't in the ISO (DEC-033); see the README for the one-line install.
@@ -49,44 +49,44 @@ With no systemd user services, the X session itself starts everything. It uses
 Debian's standard `startx` → `Xsession` path, so a user's own `~/.xinitrc` or
 `~/.xsession` still takes precedence. Order matters:
 
-1. **tty1 login.** `/etc/profile.d/satori-startx.sh` runs `exec startx` on tty1 if
-   `$DISPLAY` is unset. To opt out, a user creates `~/.config/satori/no-startx`. In the
-   live session, satori's live-config component `0161-satori-autologin` adds agetty's
+1. **tty1 login.** `/etc/profile.d/tekne-startx.sh` runs `exec startx` on tty1 if
+   `$DISPLAY` is unset. To opt out, a user creates `~/.config/tekne/no-startx`. In the
+   live session, Tekne's live-config component `0161-tekne-autologin` adds agetty's
    `--autologin` to the tty1–6 gettys. live-config's own `0160-sysvinit` component never
    works on Excalibur: it checks for a package named `sysvinit`, which no longer exists,
    and its `sh -c "/bin/login -f"` inittab line leaves `login` stopped by job control.
 2. **`/etc/X11/Xsession`** (from `x11-common`). Its `75dbus_dbus-launch` step starts the
    D-Bus session bus (`dbus-x11`), then it runs the `x-session-manager` alternative.
-3. **`satori-session`**, registered as `x-session-manager` by `satori-config`:
+3. **`tekne-session`**, registered as `x-session-manager` by `tekne-config`:
    - `gnome-keyring-daemon --start --components=secrets` attaches to the keyring that
      PAM started and unlocked at login (DEC-030), and exports its environment.
-   - It runs `exec herbstluftwm --autostart /usr/share/satori/herbstluftwm/autostart`,
+   - It runs `exec herbstluftwm --autostart /usr/share/tekne/herbstluftwm/autostart`,
      or plain `herbstluftwm` if the user has `~/.config/herbstluftwm/autostart`.
 4. **The herbstluftwm autostart** sets keybindings, tags, theme and rules, then starts
-   each of these once via `satori-run-once` (herbstluftwm re-runs autostart on reload):
+   each of these once via `tekne-run-once` (herbstluftwm re-runs autostart on reload):
    - `pipewire`, `wireplumber` and `pipewire-pulse` as three processes, because Debian's
      PipeWire config doesn't start the other two
-   - `lxpolkit`, `picom` (with `/usr/share/satori/picom.conf`), `dunst`,
+   - `lxpolkit`, `picom` (with `/usr/share/tekne/picom.conf`), `dunst`,
      `copyq --start-server`, `blueman-applet`
    - `xss-lock --transfer-sleep-lock -- i3lock`
-   - the wallpaper, `/usr/share/backgrounds/satori/satori.png` from `satori-branding`, set with `feh` (it isn't a running process)
-   - `polybar` with `/usr/share/satori/polybar/config.ini`
+   - the wallpaper, `/usr/share/backgrounds/tekne/tekne.png` from `tekne-branding`, set with `feh` (it isn't a running process)
+   - `polybar` with `/usr/share/tekne/polybar/config.ini`
 
 `herbstluftwm`, `polybar`, `dunst` and `nftables` each own their default config file as a
-conffile. satori never overwrites or diverts those files. It passes its own files from
-`/usr/share/satori/` with each program's config option, or uses a place the program reads
+conffile. Tekne never overwrites or diverts those files. It passes its own files from
+`/usr/share/tekne/` with each program's config option, or uses a place the program reads
 in addition to its own file: `/etc/xdg/dunst/dunstrc.d/` for dunst, `/etc/rofi.rasi` for
 rofi.
 
 ## 3. Keybindings (defaults)
 
-`Mod` = Super. The full list ships as `/usr/share/satori/keybindings.txt` and is
-shown by `satori-keys` on `Mod+F1`. The bindings themselves are in
-`/usr/share/satori/herbstluftwm/autostart`.
+`Mod` = Super. The full list ships as `/usr/share/tekne/keybindings.txt` and is
+shown by `tekne-keys` on `Mod+F1`. The bindings themselves are in
+`/usr/share/tekne/herbstluftwm/autostart`.
 
 | Keys | Action |
 |---|---|
-| `Mod+Return` | Terminal (`satori-terminal`) |
+| `Mod+Return` | Terminal (`tekne-terminal`) |
 | `Mod+Space` | rofi launcher |
 | `Mod+Shift+Space` | Cycle frame layout (herbstluftwm's default was `Mod+Space`) |
 | `Mod+Tab` | rofi window switcher |
@@ -108,6 +108,6 @@ shown by `satori-keys` on `Mod+F1`. The bindings themselves are in
 
 ## 4. Configuration ownership
 
-- System defaults live under `/usr/share/satori/`, shipped by `satori-config`, and are used only when the user has no config of their own.
-- User config under `~/.config` always wins. satori never writes to an existing home directory after install.
-- `satori-config` upgrades never touch user files. Changes to `/etc/skel` only affect newly created users.
+- System defaults live under `/usr/share/tekne/`, shipped by `tekne-config`, and are used only when the user has no config of their own.
+- User config under `~/.config` always wins. Tekne never writes to an existing home directory after install.
+- `tekne-config` upgrades never touch user files. Changes to `/etc/skel` only affect newly created users.

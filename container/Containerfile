@@ -1,4 +1,4 @@
-# satori build environment: Devuan Excalibur plus Debian's live-build (DEC-003).
+# Tekne build environment: Devuan Excalibur plus Debian's live-build (DEC-003).
 # Built and run by scripts/build.sh; every external input is pinned.
 FROM docker.io/devuan/devuan:excalibur@sha256:07b5f16e73ad7f81bd59b54e8901de8bf0a998be0c1df75a8d3e441f58b027aa
 

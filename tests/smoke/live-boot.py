@@ -3,12 +3,12 @@
 
     tests/smoke/live-boot.py [bios|uefi|all] [ISO]
 
-Defaults to "all" and the newest out/satori-*-amd64.iso. For each firmware
+Defaults to "all" and the newest out/tekne-*-amd64.iso. For each firmware
 mode it boots the ISO, presses "s" at the GRUB menu to pick the serial-console
 entry, logs in as the live user, and checks SPEC.md §4 rule 1: PID 1 is
 sysvinit's init and /run/systemd/system doesn't exist. It then waits for the
 autologin desktop on tty1 and checks that the X server and every session
-component in DESKTOP_PROCESSES is running (Phase 2), that satori's firewall is
+component in DESKTOP_PROCESSES is running (Phase 2), that Tekne's firewall is
 loaded, and that nothing listens beyond loopback (DEC-023). Serial logs are
 written to out/serial-<mode>.log. Exits non-zero if any mode fails.
 """
@@ -27,16 +27,16 @@ BOOT_TIMEOUT = 300
 CMD_TIMEOUT = 60
 DESKTOP_TIMEOUT = 120
 
-# Started on tty1 by autologin -> startx -> satori-session -> herbstluftwm autostart.
+# Started on tty1 by autologin -> startx -> tekne-session -> herbstluftwm autostart.
 DESKTOP_PROCESSES = [
     "Xorg", "herbstluftwm", "polybar", "dunst", "picom", "lxpolkit", "copyq",
     "xss-lock", "pipewire", "wireplumber", "pipewire-pulse",
 ]
 
 # Assembled at runtime so the echoed command line never matches the markers.
-BEGIN, END = "__SATORI" + "_BEGIN__", "__SATORI" + "_END__"
+BEGIN, END = "__TEKNE" + "_BEGIN__", "__TEKNE" + "_END__"
 CHECK_CMD = (
-    'echo __SATORI""_BEGIN__; '
+    'echo __TEKNE""_BEGIN__; '
     'echo "PID1=$(cat /proc/1/comm)"; '
     '[ -d /run/systemd/system ] && echo RUN_SYSTEMD=present || echo RUN_SYSTEMD=absent; '
     "dpkg-query -W -f='${Package}\\n' | grep systemd | sed 's/^/PKG=/'; "
@@ -45,12 +45,12 @@ CHECK_CMD = (
     f'for p in {" ".join(DESKTOP_PROCESSES)}; do pgrep -x $p >/dev/null || n=1; done; '
     '[ $n = 0 ] && break; sleep 1; i=$((i+1)); done; '
     f'for p in {" ".join(DESKTOP_PROCESSES)}; do pgrep -x $p >/dev/null && echo PROC_$p=up || echo PROC_$p=down; done; '
-    # DEC-023: satori's firewall is loaded, and nothing listens beyond loopback.
-    # DEC-034: the live system identifies as satori.
+    # DEC-023: Tekne's firewall is loaded, and nothing listens beyond loopback.
+    # DEC-034: the live system identifies as Tekne.
     'echo "OS_ID=$(. /etc/os-release && echo $ID)"; '
-    'sudo nft list chain inet satori input 2>/dev/null | grep -q "policy drop" && echo FIREWALL=loaded || echo FIREWALL=missing; '
+    'sudo nft list chain inet tekne input 2>/dev/null | grep -q "policy drop" && echo FIREWALL=loaded || echo FIREWALL=missing; '
     "sudo ss -H -tuln | awk '{print $5}' | grep -v -E '^(127\\.|\\[::1\\]|\\[::ffff:127\\.)' | sed 's/^/LISTEN=/'; "
-    'echo __SATORI""_END__\n'
+    'echo __TEKNE""_END__\n'
 )
 
 
@@ -99,7 +99,7 @@ def run(mode, iso):
     print(f"[{mode}] listening beyond loopback: {', '.join(listening) or 'none'}")
     ok = (results.get("PID1") == "init" and results.get("RUN_SYSTEMD") == "absent" and not down
           and results.get("FIREWALL") == "loaded" and not listening
-          and results.get("OS_ID") == "satori")
+          and results.get("OS_ID") == "tekne")
     print(f"{'PASS' if ok else 'FAIL'} [{mode}] (serial log: {log_path})")
     return ok
 
@@ -111,7 +111,7 @@ def main():
         sys.exit(__doc__)
     iso = os.path.abspath(args[0]) if args else newest_iso()
     if not iso:
-        sys.exit("error: no out/satori-*-amd64.iso; run sudo scripts/build.sh first")
+        sys.exit("error: no out/tekne-*-amd64.iso; run sudo scripts/build.sh first")
     if not os.path.exists(iso):
         sys.exit(f"error: {iso} not found")
 

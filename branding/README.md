@@ -1,18 +1,18 @@
-# satori branding
+# Tekne branding
 
-Source artwork for the `satori-branding` package, which renders it to PNG at
-build time (`packages/satori-branding/debian/rules`). Licensed CC-BY-SA-4.0
+Source artwork for the `tekne-branding` package, which renders it to PNG at
+build time (`packages/tekne-branding/debian/rules`). Licensed CC-BY-SA-4.0
 (DEC-019, DEC-034; full text in [LICENSE](LICENSE)), unlike the rest of the
 repository.
 
-These are **placeholders**: an ensō (the Zen brush circle) on Tokyo Night
+These are **placeholders**: a geometric T in a ring (Tekne is Greek for craft) on Tokyo Night
 colours. They contain no text, so rendering needs no fonts. Replace a file
 with real artwork of the same name and size and the build picks it up.
 
 | File | Size | Used for |
 |---|---|---|
-| `logo.svg` | 512×512 | Logo (`/usr/share/satori/branding/`) |
-| `wallpaper.svg` | 3840×2160 | Desktop wallpaper (`/usr/share/backgrounds/satori/satori.png`) |
+| `logo.svg` | 512×512 | Logo (`/usr/share/tekne/branding/`) |
+| `wallpaper.svg` | 3840×2160 | Desktop wallpaper (`/usr/share/backgrounds/tekne/tekne.png`) |
 | `grub-background.svg` | 1920×1080 | GRUB theme background, live ISO and installed systems |
 
 Palette: Tokyo Night (night). Background `#1a1b26`, dark `#16161e`,

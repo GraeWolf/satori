@@ -1,0 +1,9 @@
+# XLibre for Devuan, for the X server only (DEC-026, DEC-027).
+# Shipped by tekne-apt-sources; the pin in /etc/apt/preferences.d/tekne-xlibre.pref
+# stops it providing any other package.
+Types: deb
+URIs: https://xlibre-debian.github.io/devuan/
+Suites: main
+Components: stable
+Architectures: amd64
+Signed-By: /usr/share/tekne/keyrings/xlibre.gpg

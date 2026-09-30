@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+# The firewall init script is named tekne-firewall, not tekne-config.
+override_dh_installinit:
+	dh_installinit --name=tekne-firewall
+
+# Keep the helper scripts and autostart executable.
+execute_after_dh_fixperms:
+	chmod 0755 debian/tekne-config/usr/bin/* \
+		debian/tekne-config/usr/share/tekne/herbstluftwm/autostart

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+# base-files owns /usr/lib/os-release (and the /etc/os-release symlink to it).
+# Divert Devuan's copy aside so base-files upgrades can't put it back.
+if [ "$1" = install ] || [ "$1" = upgrade ]; then
+	dpkg-divert --package tekne-branding --add --rename \
+		--divert /usr/lib/os-release.devuan /usr/lib/os-release
+fi
+
+#DEBHELPER#

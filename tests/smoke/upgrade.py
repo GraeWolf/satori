@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upgrade smoke test: move an installed system to newer satori packages.
+"""Upgrade smoke test: move an installed system to newer Tekne packages.
 
     tests/smoke/upgrade.py CASE_DIR [PACKAGES_DIR]
 
@@ -7,10 +7,10 @@ CASE_DIR is a case kept by "tests/smoke/install.py --keep", for example
 out/install-test/uefi-luks, installed from an earlier build. PACKAGES_DIR
 (default out/packages) holds the current build's .debs.
 
-This is how an installed satori gets updates (DEC-006, DEC-032):
+This is how an installed Tekne system gets updates (DEC-006, DEC-032):
   1. Boot the installed disk, unlock and log in over serial.
-  2. Pass the new satori .debs in through QEMU fw_cfg (all but
-     satori-installer, which only belongs in the live image) and install
+  2. Pass the new Tekne .debs in through QEMU fw_cfg (all but
+     tekne-installer, which only belongs in the live image) and install
      them with apt.
   3. Check every package moved to its new, higher version, then re-run
      installed-checks.sh and compare with install.py's expectations.
@@ -49,31 +49,31 @@ def main():
     if mode not in ("bios", "uefi") or not os.path.exists(disk):
         sys.exit(f"error: {case_dir} isn't a kept install.py case (e.g. out/install-test/uefi-luks)")
 
-    debs = sorted(d for d in glob.glob(os.path.join(packages_dir, "satori-*.deb"))
-                  if not os.path.basename(d).startswith("satori-installer_"))
+    debs = sorted(d for d in glob.glob(os.path.join(packages_dir, "tekne-*.deb"))
+                  if not os.path.basename(d).startswith("tekne-installer_"))
     if not debs:
-        sys.exit(f"error: no satori .debs in {packages_dir}")
+        sys.exit(f"error: no Tekne .debs in {packages_dir}")
     new = {deb_field(d, "Package"): deb_field(d, "Version") for d in debs}
 
     # fw_cfg names are limited to 55 characters, so the files get short names.
     cmd = qemu_command(mode, vars_path, install.MEMORY_MIB) + [
         "-boot", "c", "-drive", f"file={disk},if=virtio,format=qcow2",
-        "-fw_cfg", f"name=opt/satori/check,file={install.CHECKS}",
+        "-fw_cfg", f"name=opt/tekne/check,file={install.CHECKS}",
     ]
     for i, deb in enumerate(debs):
-        cmd += ["-fw_cfg", f"name=opt/satori/deb{i},file={deb}"]
+        cmd += ["-fw_cfg", f"name=opt/tekne/deb{i},file={deb}"]
 
-    fw = "/sys/firmware/qemu_fw_cfg/by_name/opt/satori"
+    fw = "/sys/firmware/qemu_fw_cfg/by_name/opt/tekne"
     pkgs = " ".join(new)
     script = (
         "modprobe qemu_fw_cfg; rm -rf /tmp/up; mkdir /tmp/up; "
         f"for d in {fw}/deb*; do cp $d/raw /tmp/up/$(basename $d).deb; done; "
-        f"echo __SATORI\"\"_BEGIN__; dpkg-query -W -f \"BEFORE_\\${{Package}}=\\${{Version}}\\n\" {pkgs}; "
-        "DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=--force-confdef "
+        f"echo __TEKNE\"\"_BEGIN__; dpkg-query -W -f \"BEFORE_\\${{Package}}=\\${{Version}}\\n\" {pkgs}; "
+        "DEBIAN_FRONTEND=noninteractive apt-get install -y --purge -o Dpkg::Options::=--force-confdef "
         "-o Dpkg::Options::=--force-confold /tmp/up/*.deb >/tmp/up/apt.log 2>&1 "
         "&& echo APT=ok || { echo APT=failed; tail -n 20 /tmp/up/apt.log; }; "
         f"dpkg-query -W -f \"AFTER_\\${{Package}}=\\${{Version}}\\n\" {pkgs}; "
-        f"sh {fw}/check/raw; echo __SATORI\"\"_END__"
+        f"sh {fw}/check/raw; echo __TEKNE\"\"_END__"
     )
     user, password = install.ANSWERS["USERNAME"], install.ANSWERS["PASSWORD"]
     log_path = os.path.join(case_dir, "serial-upgrade.log")

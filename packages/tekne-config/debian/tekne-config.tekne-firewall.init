@@ -1,0 +1,53 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          tekne-firewall
+# Required-Start:    $local_fs
+# Required-Stop:     $local_fs
+# Should-Start:      nftables
+# X-Start-Before:    $network
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Tekne's default firewall
+# Description:       Loads /etc/tekne/nftables.conf (DEC-023): inbound traffic
+#                    denied except loopback and replies, outbound allowed.
+#                    Starts after nftables (if installed), whose own ruleset
+#                    begins with "flush ruleset".
+### END INIT INFO
+
+RULES=/etc/tekne/nftables.conf
+NFT=/usr/sbin/nft
+
+[ -x "${NFT}" ] || exit 0
+. /lib/lsb/init-functions
+
+case "$1" in
+	start|restart|reload|force-reload)
+		log_daemon_msg "Loading tekne firewall" "tekne-firewall"
+		"${NFT}" -f "${RULES}"
+		log_end_msg $?
+		;;
+	stop)
+		log_daemon_msg "Removing tekne firewall (all inbound traffic allowed)" "tekne-firewall"
+		"${NFT}" delete table inet tekne 2>/dev/null
+		log_end_msg 0
+		;;
+	status)
+		# nft can't read the ruleset without root, which would look like
+		# "not loaded". 4 is LSB's "status unknown".
+		if [ "$(id -u)" -ne 0 ]; then
+			echo "tekne firewall status needs root: sudo service tekne-firewall status" >&2
+			exit 4
+		fi
+		if "${NFT}" list table inet tekne >/dev/null 2>&1; then
+			echo "tekne firewall is loaded"
+		else
+			echo "tekne firewall is NOT loaded"
+			exit 3
+		fi
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload|force-reload|status}" >&2
+		exit 3
+		;;
+esac
+exit 0

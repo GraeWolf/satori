@@ -1,0 +1,10 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_installinit:
+	dh_installinit --name=tekne-autoinstall
+
+execute_after_dh_fixperms:
+	chmod 0755 debian/tekne-installer/usr/sbin/tekne-install

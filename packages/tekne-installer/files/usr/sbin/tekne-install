@@ -1,0 +1,531 @@
+#!/bin/bash
+# tekne-install: install the running Tekne live system to a whole disk.
+# Design: docs/installer.md. Scope: DEC-005 (one disk, wiped; ext4; optional
+# LUKS2; BIOS or UEFI). Swap and hibernation: DEC-017.
+#
+#   sudo tekne-install                    interactive (gum)
+#   sudo tekne-install --answers FILE     unattended, for automated tests
+#
+# The source is the pristine squashfs, not the running system, so live-session
+# runtime changes (the live user, autologin, generated files) never reach the
+# installed system.
+set -Eeuo pipefail
+
+LOG=/var/log/tekne-installer.log
+SOURCE=/run/live/rootfs/filesystem.squashfs
+TARGET=/mnt/tekne-target
+MAPPER=tekne_root
+GRUB_DEBS=/usr/share/tekne-installer/debs
+MIN_DISK_GIB=20
+USER_GROUPS="sudo audio video netdev plugdev bluetooth"
+LIVE_PACKAGES="live-boot live-boot-initramfs-tools live-boot-doc live-config live-config-sysvinit live-config-doc live-tools tekne-installer"
+
+# Settings, filled in by prompts or an answers file.
+DISK=""
+ENCRYPT=no
+LUKS_PASSPHRASE=""
+TARGET_HOSTNAME=tekne
+TIMEZONE=UTC
+LOCALE=en_US.UTF-8
+KEYMAP=us
+FULLNAME=""
+USERNAME=""
+PASSWORD=""
+CONFIRM_DISK=""
+SERIAL_CONSOLE=no
+UNATTENDED=no
+
+# Package scripts in the target chroot must never prompt.
+export DEBIAN_FRONTEND=noninteractive
+
+# ---------------------------------------------------------------- helpers
+
+exec 3>&1    # the terminal (or /dev/console when unattended); fd 1/2 go to the log in run()
+
+log()  { printf '%s %s\n' "$(date +%T)" "$*" >>"${LOG}"; }
+say()  { printf '%s\n' "$*" >&3; log "$*"; }
+step() { say ""; say "==> $*"; }
+die()  { say "tekne-install: error: $*"; exit 1; }
+# Run a command with its output in the log. Arguments are logged, never stdin,
+# so secrets are always passed on stdin.
+run()  { log "+ $*"; "$@" >>"${LOG}" 2>&1; }
+in_target() { run chroot "${TARGET}" "$@"; }
+
+# /dev/sda -> /dev/sda3, /dev/nvme0n1 -> /dev/nvme0n1p3
+part() { case "${DISK}" in *[0-9]) echo "${DISK}p$1" ;; *) echo "${DISK}$1" ;; esac; }
+
+firmware() { [ -d /sys/firmware/efi ] && echo uefi || echo bios; }
+
+# Installed RAM rounded up to the next GiB: the swapfile size (DEC-017).
+swap_gib() { awk '/^MemTotal:/ { print int(($2 + 1048575) / 1048576) }' /proc/meminfo; }
+min_disk_bytes() { echo $(( (MIN_DISK_GIB + $(swap_gib)) * 1024 * 1024 * 1024 )); }
+
+# The disk the live system booted from, which must never be offered.
+live_disk() {
+	local src parent
+	src="$(findmnt -no SOURCE /run/live/medium 2>/dev/null || true)"
+	[ -n "${src}" ] || return 0
+	parent="$(lsblk -no PKNAME "${src}" 2>/dev/null | head -n 1)"
+	echo "${parent:-$(basename "${src}")}"
+}
+
+# "NAME SIZE MODEL" for every disk that can be installed to.
+candidate_disks() {
+	local live min name size type ro model
+	live="$(live_disk)"
+	min="$(min_disk_bytes)"
+	lsblk -dnbo NAME,SIZE,TYPE,RO,MODEL | while read -r name size type ro model; do
+		[ "${type}" = disk ] && [ "${ro}" = 0 ] || continue
+		[ "${name}" != "${live}" ] || continue
+		[ "${size}" -ge "${min}" ] || continue
+		printf '%s %s %s\n' "${name}" "$(numfmt --to=iec "${size}")" "${model:-}"
+	done
+}
+
+cleanup() {
+	local status=$?
+	set +e
+	rm -f "${TARGET}/usr/sbin/policy-rc.d"
+	if mountpoint -q "${TARGET}"; then
+		[ -d "${TARGET}/var/log" ] && cp "${LOG}" "${TARGET}/var/log/tekne-installer.log"
+		umount -R "${TARGET}"
+	fi
+	[ -e "/dev/mapper/${MAPPER}" ] && cryptsetup close "${MAPPER}"
+	if [ "${status}" -ne 0 ]; then
+		say ""
+		say "Install FAILED (exit ${status}). Full log: ${LOG}"
+		[ "${UNATTENDED}" = yes ] && tail -n 40 "${LOG}" >&3
+	fi
+}
+trap cleanup EXIT
+trap 'log "ERR (exit $?) at line ${LINENO}: ${BASH_COMMAND}"' ERR
+
+# ---------------------------------------------------------------- settings
+
+read_answers() {
+	local line key value
+	[ -r "$1" ] || die "can't read answers file $1"
+	while IFS= read -r line || [ -n "${line}" ]; do
+		line="${line%$'\r'}"
+		case "${line}" in ''|'#'*) continue ;; esac
+		key="${line%%=*}"
+		value="${line#*=}"
+		value="${value#\"}"; value="${value%\"}"
+		case "${key}" in
+			DISK)            DISK="${value}" ;;
+			ENCRYPT)         ENCRYPT="${value}" ;;
+			LUKS_PASSPHRASE) LUKS_PASSPHRASE="${value}" ;;
+			HOSTNAME)        TARGET_HOSTNAME="${value}" ;;
+			TZ)              TIMEZONE="${value}" ;;
+			LOCALE)          LOCALE="${value}" ;;
+			KEYMAP)          KEYMAP="${value}" ;;
+			FULLNAME)        FULLNAME="${value}" ;;
+			USERNAME)        USERNAME="${value}" ;;
+			PASSWORD)        PASSWORD="${value}" ;;
+			CONFIRM_DISK)    CONFIRM_DISK="${value}" ;;
+			SERIAL_CONSOLE)  SERIAL_CONSOLE="${value}" ;;
+			*) die "unknown key in answers file: ${key}" ;;
+		esac
+	done < "$1"
+}
+
+locale_line()  { grep -m1 "^${1} " /usr/share/i18n/SUPPORTED 2>/dev/null; }
+# (Output is captured before grep -q: with pipefail, grep exiting early makes
+# the writer's SIGPIPE fail the whole pipeline even on a match.)
+keymap_list()  { awk '/^! layout/{f=1; next} /^!/{f=0} f{print $1}' /usr/share/X11/xkb/rules/base.lst; }
+keymap_valid() { local all; all="$(keymap_list)"; grep -qx -- "$1" <<<"${all}"; }
+# zone1970.tab leaves out zones that share rules with another (Europe/Oslo,
+# Asia/Kuwait, ...); zone.tab lists at least one per country. Use both.
+timezone_list() { awk '!/^#/ { print $3 }' /usr/share/zoneinfo/zone1970.tab /usr/share/zoneinfo/zone.tab | sort -u; }
+# List with the current value first (so Enter keeps it), without duplicates.
+current_first() { { printf '%s\n' "$@"; cat; } | awk 'NF && !seen[$0]++'; }
+valid_user()   { [[ "$1" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] && ! grep -q "^$1:" "${SOURCE}/etc/passwd"; }
+valid_host()   { [[ "$1" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]]; }
+
+# Every check the prompts make, repeated for unattended installs.
+validate_settings() {
+	local name names mounts
+	[ -b "${DISK}" ] || die "not a block device: ${DISK}"
+	name="$(basename "${DISK}")"
+	names="$(candidate_disks | awk '{print $1}')"
+	grep -qx -- "${name}" <<<"${names}" \
+		|| die "${DISK} can't be installed to (live medium, read-only, or smaller than $(( MIN_DISK_GIB + $(swap_gib) )) GiB)"
+	[ "${CONFIRM_DISK}" = "${name}" ] || die "disk not confirmed (CONFIRM_DISK must be ${name})"
+	case "${ENCRYPT}" in
+		yes) [ "${#LUKS_PASSPHRASE}" -ge 8 ] || die "encryption passphrase must be at least 8 characters" ;;
+		no)  ;;
+		*)   die "ENCRYPT must be yes or no" ;;
+	esac
+	valid_host "${TARGET_HOSTNAME}" || die "invalid hostname: ${TARGET_HOSTNAME}"
+	[ -f "/usr/share/zoneinfo/${TIMEZONE}" ] || die "unknown timezone: ${TIMEZONE}"
+	[ -n "$(locale_line "${LOCALE}")" ] || die "unsupported locale: ${LOCALE}"
+	keymap_valid "${KEYMAP}" || die "unknown keyboard layout: ${KEYMAP}"
+	valid_user "${USERNAME}" || die "invalid or reserved username: ${USERNAME}"
+	[ -n "${PASSWORD}" ] || die "user password is empty"
+	case "${SERIAL_CONSOLE}" in yes|no) ;; *) die "SERIAL_CONSOLE must be yes or no" ;; esac
+	mounts="$(lsblk -nro MOUNTPOINTS "${DISK}")"
+	if grep -q . <<<"${mounts}"; then
+		die "${DISK} has mounted partitions; unmount them first"
+	fi
+}
+
+# ---------------------------------------------------------------- interactive prompts
+# Each step returns non-zero when the user presses Esc, which goes back a step.
+
+header() {
+	clear
+	gum style --border rounded --padding "0 2" --margin "1 0" \
+		"Tekne installer · step $1/5 · $2" "$(firmware | tr a-z A-Z) · Esc goes back"
+}
+
+ask_disk() {
+	local choice
+	header 1 "Target disk"
+	gum style "The whole disk is erased. Disks too small (under $(( MIN_DISK_GIB + $(swap_gib) )) GiB) and the live medium aren't listed."
+	choice="$(candidate_disks | gum choose --header "Install Tekne to:")" || return 1
+	[ -n "${choice}" ] || return 1
+	DISK="/dev/${choice%% *}"
+	echo
+	lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINTS "${DISK}"
+	gum confirm "Erase everything on ${DISK}?" --default=false || return 1
+}
+
+ask_encryption() {
+	local again
+	header 2 "Encryption"
+	if gum confirm "Encrypt the disk (LUKS2)? You'll type the passphrase at every boot." --default=true; then
+		ENCRYPT=yes
+		while :; do
+			LUKS_PASSPHRASE="$(gum input --password --placeholder "Encryption passphrase (8+ characters)")" || return 1
+			again="$(gum input --password --placeholder "Repeat passphrase")" || return 1
+			if [ "${#LUKS_PASSPHRASE}" -lt 8 ]; then gum style --foreground 1 "Too short."; continue; fi
+			[ "${LUKS_PASSPHRASE}" = "${again}" ] && break
+			gum style --foreground 1 "Passphrases don't match."
+		done
+	else
+		[ $? -eq 1 ] || return 1   # Esc/Ctrl-C, not "No"
+		ENCRYPT=no
+		LUKS_PASSPHRASE=""
+	fi
+}
+
+ask_system() {
+	local current_layout other
+	header 3 "System"
+	while :; do
+		TARGET_HOSTNAME="$(gum input --value "${TARGET_HOSTNAME}" --header "Hostname")" || return 1
+		valid_host "${TARGET_HOSTNAME}" && break
+		gum style --foreground 1 "Letters, digits and hyphens only."
+	done
+	# The search starts empty so the whole list shows; --value would pre-fill the
+	# search text and hide almost everything.
+	TIMEZONE="$(timezone_list | current_first "${TIMEZONE}" UTC \
+		| gum filter --header "Timezone: type a city to search, Enter to choose" \
+			--placeholder "e.g. Chicago, Berlin, Tokyo")" || return 1
+	other="other (type a locale)"
+	LOCALE="$(printf '%s\n' en_US.UTF-8 en_GB.UTF-8 de_DE.UTF-8 fr_FR.UTF-8 es_ES.UTF-8 \
+		it_IT.UTF-8 nl_NL.UTF-8 pt_BR.UTF-8 pl_PL.UTF-8 sv_SE.UTF-8 ja_JP.UTF-8 "${other}" \
+		| gum choose --header "Locale" --selected "${LOCALE}")" || return 1
+	while [ "${LOCALE}" = "${other}" ] || [ -z "$(locale_line "${LOCALE}")" ]; do
+		LOCALE="$(gum input --placeholder "e.g. da_DK.UTF-8" --header "Locale")" || return 1
+	done
+	current_layout="$(. /etc/default/keyboard 2>/dev/null; echo "${XKBLAYOUT:-us}")"
+	KEYMAP="$(keymap_list | current_first "${current_layout%%,*}" \
+		| gum filter --header "Keyboard layout: type to search, Enter to choose" \
+			--placeholder "e.g. us, gb, de, fr")" || return 1
+}
+
+ask_user() {
+	local again
+	header 4 "Your account"
+	FULLNAME="$(gum input --value "${FULLNAME}" --header "Full name (optional)")" || return 1
+	while :; do
+		USERNAME="$(gum input --value "${USERNAME}" --header "Username")" || return 1
+		valid_user "${USERNAME}" && break
+		gum style --foreground 1 "Lowercase letters, digits, - and _; must start with a letter and not be a system account."
+	done
+	while :; do
+		PASSWORD="$(gum input --password --header "Password (also unlocks your keyring at login)")" || return 1
+		again="$(gum input --password --header "Repeat password")" || return 1
+		[ -n "${PASSWORD}" ] && [ "${PASSWORD}" = "${again}" ] && break
+		gum style --foreground 1 "Empty, or doesn't match."
+	done
+}
+
+ask_confirm() {
+	local name typed
+	name="$(basename "${DISK}")"
+	header 5 "Confirm"
+	gum style --border normal --padding "0 1" \
+		"Disk:       ${DISK}  (ALL DATA WILL BE ERASED)" \
+		"Firmware:   $(firmware)" \
+		"Encryption: ${ENCRYPT}" \
+		"Swapfile:   $(swap_gib) GiB (hibernation)" \
+		"Hostname:   ${TARGET_HOSTNAME}" \
+		"Timezone:   ${TIMEZONE}" \
+		"Locale:     ${LOCALE}" \
+		"Keyboard:   ${KEYMAP}" \
+		"User:       ${USERNAME}${FULLNAME:+ (${FULLNAME})}, sudo; root login disabled"
+	typed="$(gum input --header "Type ${name} to erase it and install, or Esc to go back")" || return 1
+	[ "${typed}" = "${name}" ] || { gum style --foreground 1 "Not confirmed."; sleep 2; return 1; }
+	CONFIRM_DISK="${typed}"
+}
+
+interactive() {
+	local steps=(ask_disk ask_encryption ask_system ask_user ask_confirm) i=0
+	command -v gum >/dev/null || die "gum is not installed"
+	while [ "${i}" -lt "${#steps[@]}" ]; do
+		if "${steps[$i]}"; then
+			i=$((i + 1))
+		elif [ "${i}" -eq 0 ]; then
+			gum confirm "Quit the installer? Nothing has been changed." && exit 0
+		else
+			i=$((i - 1))
+		fi
+	done
+}
+
+# ---------------------------------------------------------------- install
+
+partition_and_format() {
+	step "Partitioning ${DISK} ($(firmware), GPT)"
+	run wipefs --all "${DISK}"
+	run sgdisk --zap-all "${DISK}"
+	if [ "$(firmware)" = uefi ]; then
+		run sgdisk -n1:0:+512M -t1:ef00 -c1:EFI "${DISK}"
+	else
+		run sgdisk -n1:0:+1M -t1:ef02 -c1:bios_grub "${DISK}"
+	fi
+	run sgdisk -n2:0:+1G -t2:8300 -c2:boot "${DISK}"
+	if [ "${ENCRYPT}" = yes ]; then
+		run sgdisk -n3:0:0 -t3:8309 -c3:root "${DISK}"
+	else
+		run sgdisk -n3:0:0 -t3:8304 -c3:root "${DISK}"
+	fi
+	run partprobe "${DISK}" || true
+	run udevadm settle
+
+	if [ "${ENCRYPT}" = yes ]; then
+		step "Encrypting the root partition (LUKS2)"
+		printf '%s' "${LUKS_PASSPHRASE}" | run cryptsetup luksFormat --type luks2 --batch-mode --key-file=- "$(part 3)"
+		printf '%s' "${LUKS_PASSPHRASE}" | run cryptsetup open --key-file=- "$(part 3)" "${MAPPER}"
+		ROOTDEV="/dev/mapper/${MAPPER}"
+	else
+		ROOTDEV="$(part 3)"
+	fi
+
+	step "Creating filesystems"
+	[ "$(firmware)" = uefi ] && run mkfs.vfat -F 32 -n EFI "$(part 1)"
+	run mkfs.ext4 -F -q -L boot "$(part 2)"
+	run mkfs.ext4 -F -q -L root "${ROOTDEV}"
+
+	mkdir -p "${TARGET}"
+	run mount "${ROOTDEV}" "${TARGET}"
+	mkdir -p "${TARGET}/boot"
+	run mount "$(part 2)" "${TARGET}/boot"
+	if [ "$(firmware)" = uefi ]; then
+		mkdir -p "${TARGET}/boot/efi"
+		run mount "$(part 1)" "${TARGET}/boot/efi"
+	fi
+}
+
+copy_system() {
+	step "Copying the system (several minutes)"
+	[ -d "${SOURCE}/etc" ] || die "live system image not found at ${SOURCE}"
+	if [ "${UNATTENDED}" = yes ]; then
+		run rsync -aHAX --numeric-ids "${SOURCE}/" "${TARGET}/"
+	else
+		log "+ rsync -aHAX --numeric-ids --info=progress2 ${SOURCE}/ ${TARGET}/"
+		rsync -aHAX --numeric-ids --info=progress2 "${SOURCE}/" "${TARGET}/" >&3 2>>"${LOG}"
+	fi
+
+	# grub-install needs EFI variables to add the firmware boot entry.
+	if [ "$(firmware)" = uefi ] && ! mountpoint -q /sys/firmware/efi/efivars; then
+		run mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+	fi
+	mount --rbind /dev "${TARGET}/dev" && mount --make-rslave "${TARGET}/dev"
+	mount --rbind /sys "${TARGET}/sys" && mount --make-rslave "${TARGET}/sys"
+	mount -t proc proc "${TARGET}/proc"
+	mount -t tmpfs tmpfs "${TARGET}/run"
+	# Don't let package scripts start or stop services inside the chroot.
+	printf '#!/bin/sh\nexit 101\n' > "${TARGET}/usr/sbin/policy-rc.d"
+	chmod 755 "${TARGET}/usr/sbin/policy-rc.d"
+}
+
+remove_live_parts() {
+	local installed
+	step "Removing live-session parts"
+	# Only purge what's installed: apt-get fails on packages it doesn't know.
+	installed="$(chroot "${TARGET}" dpkg-query -W -f '${Package} ${db:Status-Status}\n' ${LIVE_PACKAGES} 2>/dev/null \
+		| awk '$2 == "installed" { print $1 }')"
+	[ -z "${installed}" ] || in_target apt-get purge -y ${installed}
+	# Files Tekne adds to the live image only (live-build/config/).
+	rm -f "${TARGET}/usr/lib/live/config/0161-tekne-autologin" \
+		"${TARGET}/usr/local/sbin/tekne-serial-getty"
+	rmdir "${TARGET}/usr/lib/live/config" "${TARGET}/usr/lib/live" 2>/dev/null || true
+	# The build adds a serial getty line (T0) for the live image's tests.
+	cp "${TARGET}/usr/share/sysvinit/inittab" "${TARGET}/etc/inittab"
+}
+
+configure_system() {
+	local root_uuid boot_uuid esp_uuid luks_uuid supported group groups=""
+	step "Configuring the installed system"
+	root_uuid="$(blkid -s UUID -o value "${ROOTDEV}")"
+	boot_uuid="$(blkid -s UUID -o value "$(part 2)")"
+
+	{
+		echo "# /etc/fstab, written by tekne-install"
+		echo "UUID=${root_uuid}  /          ext4  errors=remount-ro  0 1"
+		echo "UUID=${boot_uuid}  /boot      ext4  defaults           0 2"
+		if [ "$(firmware)" = uefi ]; then
+			esp_uuid="$(blkid -s UUID -o value "$(part 1)")"
+			echo "UUID=${esp_uuid}  /boot/efi  vfat  umask=0077         0 1"
+		fi
+		echo "/swapfile  none  swap  sw  0 0"
+	} > "${TARGET}/etc/fstab"
+
+	if [ "${ENCRYPT}" = yes ]; then
+		luks_uuid="$(blkid -s UUID -o value "$(part 3)")"
+		echo "${MAPPER} UUID=${luks_uuid} none luks,discard" > "${TARGET}/etc/crypttab"
+	else
+		: > "${TARGET}/etc/crypttab"
+	fi
+
+	echo "${TARGET_HOSTNAME}" > "${TARGET}/etc/hostname"
+	cat > "${TARGET}/etc/hosts" <<-EOF
+		127.0.0.1	localhost
+		127.0.1.1	${TARGET_HOSTNAME}
+		::1		localhost ip6-localhost ip6-loopback
+		ff02::1		ip6-allnodes
+		ff02::2		ip6-allrouters
+	EOF
+
+	ln -sf "/usr/share/zoneinfo/${TIMEZONE}" "${TARGET}/etc/localtime"
+	echo "${TIMEZONE}" > "${TARGET}/etc/timezone"
+
+	supported="$(locale_line "${LOCALE}")"
+	echo "${supported}" > "${TARGET}/etc/locale.gen"
+	[ "${LOCALE}" = en_US.UTF-8 ] || echo "en_US.UTF-8 UTF-8" >> "${TARGET}/etc/locale.gen"
+	in_target locale-gen
+	in_target update-locale "LANG=${LOCALE}"
+
+	cat > "${TARGET}/etc/default/keyboard" <<-EOF
+		XKBMODEL="pc105"
+		XKBLAYOUT="${KEYMAP}"
+		XKBVARIANT=""
+		XKBOPTIONS=""
+		BACKSPACE="guess"
+	EOF
+
+	step "Creating user ${USERNAME}"
+	for group in ${USER_GROUPS}; do
+		chroot "${TARGET}" getent group "${group}" >/dev/null && groups="${groups:+${groups},}${group}"
+	done
+	in_target useradd --create-home --shell /bin/bash --comment "${FULLNAME}" --groups "${groups}" "${USERNAME}"
+	printf '%s:%s\n' "${USERNAME}" "${PASSWORD}" | run chroot "${TARGET}" chpasswd
+	in_target passwd --lock root
+
+	if [ "${SERIAL_CONSOLE}" = yes ]; then
+		echo 'T0:23:respawn:/sbin/getty -L ttyS0 115200 vt100' >> "${TARGET}/etc/inittab"
+	fi
+}
+
+setup_swap() {
+	local offset root_uuid
+	step "Creating a $(swap_gib) GiB swapfile for hibernation"
+	in_target mkswap --file --size "$(( $(swap_gib) * 1024 * 1024 * 1024 ))" /swapfile
+	chmod 600 "${TARGET}/swapfile"
+	# First physical extent, in filesystem blocks (= pages on ext4 with 4 KiB blocks).
+	offset="$(chroot "${TARGET}" filefrag -v /swapfile | awk '$1 == "0:" { sub(/\.\.$/, "", $4); print $4; exit }')"
+	[[ "${offset}" =~ ^[0-9]+$ ]] || die "couldn't read the swapfile's physical offset"
+	root_uuid="$(blkid -s UUID -o value "${ROOTDEV}")"
+	# initramfs-tools reads resume_offset only from the kernel command line, so
+	# both values go there (see install_bootloader); this file just makes sure
+	# the resume hook is included in the initramfs.
+	echo "RESUME=UUID=${root_uuid}" > "${TARGET}/etc/initramfs-tools/conf.d/resume"
+	RESUME_ARGS="resume=UUID=${root_uuid} resume_offset=${offset}"
+	log "swapfile offset ${offset}"
+}
+
+install_bootloader() {
+	local pkg deb disk_id cmdline
+	step "Installing the bootloader"
+	if [ "$(firmware)" = uefi ]; then pkg=grub-efi-amd64; else pkg=grub-pc; fi
+	deb="$(ls "${TARGET}${GRUB_DEBS}/${pkg}"_*.deb 2>/dev/null | head -n 1)"
+	[ -n "${deb}" ] || die "no ${pkg} package in ${GRUB_DEBS}"
+
+	disk_id="$(find -L /dev/disk/by-id -samefile "${DISK}" 2>/dev/null | grep -v -- '-part' | head -n 1 || true)"
+	{
+		echo "grub-pc grub-pc/install_devices multiselect ${disk_id:-${DISK}}"
+		echo "grub-efi-amd64 grub2/force_efi_extra_removable boolean true"
+	} | run chroot "${TARGET}" debconf-set-selections
+	in_target dpkg -i "${deb#"${TARGET}"}"
+	in_target apt-mark manual cryptsetup cryptsetup-initramfs efibootmgr "${pkg}"
+	rm -rf "${TARGET}/usr/share/tekne-installer"
+
+	cmdline="${RESUME_ARGS}"
+	if [ "${SERIAL_CONSOLE}" = yes ]; then
+		cmdline="${cmdline} console=tty0 console=ttyS0,115200n8"
+		cat >> "${TARGET}/etc/default/grub" <<-'EOF'
+
+			# tekne-install: serial console
+			GRUB_TERMINAL="console serial"
+			GRUB_SERIAL_COMMAND="serial --unit=0 --speed=115200"
+		EOF
+	fi
+	sed -i "s|^GRUB_CMDLINE_LINUX=\"\(.*\)\"|GRUB_CMDLINE_LINUX=\"\1 ${cmdline}\"|" "${TARGET}/etc/default/grub"
+
+	step "Building the initramfs"
+	in_target update-initramfs -u -k all
+
+	if [ "$(firmware)" = uefi ]; then
+		in_target grub-install --target=x86_64-efi --efi-directory=/boot/efi
+		in_target grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable
+	else
+		in_target grub-install --target=i386-pc "${DISK}"
+	fi
+	in_target update-grub
+}
+
+# ---------------------------------------------------------------- main
+
+main() {
+	while [ $# -gt 0 ]; do
+		case "$1" in
+			--answers) UNATTENDED=yes; ANSWERS="${2:?--answers needs a file}"; shift 2 ;;
+			-h|--help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+			*) die "unknown argument: $1" ;;
+		esac
+	done
+
+	[ "$(id -u)" -eq 0 ] || die "run as root: sudo tekne-install"
+	[ -d "${SOURCE}" ] || die "this isn't a Tekne live session (${SOURCE} missing)"
+	: > "${LOG}"
+	chmod 600 "${LOG}"
+	log "tekne-install starting ($(firmware), unattended=${UNATTENDED})"
+
+	if [ "${UNATTENDED}" = yes ]; then
+		read_answers "${ANSWERS}"
+	else
+		interactive
+	fi
+	validate_settings
+
+	partition_and_format
+	copy_system
+	remove_live_parts
+	configure_system
+	setup_swap
+	install_bootloader
+
+	step "Finishing"
+	cp "${LOG}" "${TARGET}/var/log/tekne-installer.log"
+	chmod 600 "${TARGET}/var/log/tekne-installer.log"
+	say "Tekne is installed on ${DISK}."
+	if [ "${UNATTENDED}" = no ] && gum confirm "Reboot now? (remove the live USB when the screen goes dark)"; then
+		cleanup; trap - EXIT
+		reboot
+	fi
+}
+
+main "$@"

@@ -1,0 +1,27 @@
+Mod+Return            Terminal (alacritty)
+Mod+Space             Application launcher (rofi)
+Mod+Tab               Window switcher (rofi)
+Mod+v                 Clipboard history (CopyQ)
+Mod+F1                This keybinding list
+Mod+Shift+e           Power menu: lock, logout, suspend, hibernate, reboot, poweroff
+Mod+Escape            Lock screen
+Mod+p                 Screenshot, full screen
+Mod+Shift+p           Screenshot, select an area
+Mod+w                 Close window
+Mod+1..9              Switch to tag 1-9
+Mod+Shift+1..9        Move window to tag 1-9
+Mod+h/j/k/l           Focus left/down/up/right
+Mod+Shift+h/j/k/l     Move window left/down/up/right
+Mod+Ctrl+h/j/k/l      Resize frame
+Mod+u                 Split frame vertically (new frame below)
+Mod+o                 Split frame horizontally (new frame right)
+Mod+r                 Remove frame
+Mod+f                 Toggle fullscreen
+Mod+s                 Toggle floating
+Mod+Shift+Space       Cycle frame layout
+Mod+Shift+r           Reload herbstluftwm
+Mod+drag              Move a floating window (left button) / resize (right button)
+Volume keys           Volume up/down/mute (pamixer)
+Brightness keys       Screen brightness (brightnessctl)
+Network               Click the bar's network module, or run nmtui
+Email (Melia)         Not preinstalled: run  sudo tekne-get-melia

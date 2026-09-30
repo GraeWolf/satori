@@ -1,11 +1,11 @@
 #!/bin/sh
-# satori-install puts either grub-pc (BIOS) or grub-efi-amd64 (UEFI) on the
+# tekne-install puts either grub-pc (BIOS) or grub-efi-amd64 (UEFI) on the
 # installed system. The two conflict, so neither can be installed in the live
 # image; the installer installs the right one from these .debs, offline. Their
-# -bin packages come with satori-installer, and the versions must match.
+# -bin packages come with tekne-installer, and the versions must match.
 set -e
 
-DIR=/usr/share/satori-installer/debs
+DIR=/usr/share/tekne-installer/debs
 mkdir -p "${DIR}"
 cd "${DIR}"
 apt-get download grub-pc grub-efi-amd64

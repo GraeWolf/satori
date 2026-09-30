@@ -1,0 +1,7 @@
+build/os-release usr/lib/
+build/tekne.png usr/share/backgrounds/tekne/
+build/background.png usr/share/grub/themes/tekne/
+files/grub/theme.txt usr/share/grub/themes/tekne/
+files/etc/default/grub.d/tekne-theme.cfg etc/default/grub.d/
+branding/logo.svg usr/share/tekne/branding/
+build/logo.png usr/share/tekne/branding/

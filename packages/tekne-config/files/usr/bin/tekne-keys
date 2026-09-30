@@ -1,0 +1,3 @@
+#!/bin/sh
+# Show Tekne's keybindings (Mod+F1).
+exec rofi -dmenu -i -no-custom -p keys < /usr/share/tekne/keybindings.txt >/dev/null

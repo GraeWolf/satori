@@ -1,0 +1,11 @@
+# Devuan's excalibur-backports, for the kernel only (DEC-036). Shipped by
+# tekne-apt-sources. It's Devuan's own archive, signed by Devuan's key.
+# The suite is NotAutomatic, so nothing comes from it by default; the pin in
+# /etc/apt/preferences.d/tekne-backports.pref makes the kernel packages come
+# from it. Anything else is installed from it only when asked for by name,
+# e.g. "apt install foo/excalibur-backports".
+Types: deb
+URIs: http://deb.devuan.org/merged/
+Suites: excalibur-backports
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/devuan-archive-keyring.gpg

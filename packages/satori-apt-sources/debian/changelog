@@ -1,7 +1,0 @@
-satori-apt-sources (0.1) unstable; urgency=medium
-
-  * Initial release: Brave and XLibre repositories with scoped keys and pins.
-    Brave's sources use Brave's own file name and key path, so brave-keyring
-    doesn't link its key into /etc/apt/trusted.gpg.d.
-
- -- satori project <noreply@satori.invalid>  Mon, 28 Sep 2026 12:00:00 +0000

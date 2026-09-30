@@ -1,0 +1,12 @@
+# Tekne's os-release, shipped by tekne-branding. Tekne is based on Devuan
+# GNU/Linux 6 (excalibur); Devuan's own copy is diverted to
+# /usr/lib/os-release.devuan.
+PRETTY_NAME="Tekne @VERSION@ (excalibur)"
+NAME="Tekne"
+VERSION_ID="@VERSION_ID@"
+VERSION="@VERSION@ (excalibur)"
+VERSION_CODENAME=excalibur
+ID=tekne
+ID_LIKE="devuan debian"
+HOME_URL="https://github.com/GraeWolf/tekne"
+BUG_REPORT_URL="https://github.com/GraeWolf/tekne/issues"

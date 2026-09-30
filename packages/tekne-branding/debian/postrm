@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = remove ] || [ "$1" = abort-install ] || [ "$1" = disappear ]; then
+	dpkg-divert --package tekne-branding --remove --rename \
+		--divert /usr/lib/os-release.devuan /usr/lib/os-release
+fi
+
+if [ "$1" = remove ] || [ "$1" = purge ]; then
+	rm -rf /boot/grub/themes/tekne
+	if [ -e /boot/grub/grub.cfg ] && command -v update-grub >/dev/null 2>&1; then
+		update-grub
+	fi
+fi
+
+#DEBHELPER#

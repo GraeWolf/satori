@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+# DEC-028: Brave Origin is the default browser. Only on first install, so a
+# choice made later with update-alternatives survives upgrades. tekne-desktop
+# depends on brave-origin, so its alternative is already registered.
+if [ "$1" = configure ] && [ -z "$2" ] && [ -x /usr/bin/brave-origin-stable ]; then
+	update-alternatives --set x-www-browser /usr/bin/brave-origin-stable
+fi
+
+#DEBHELPER#

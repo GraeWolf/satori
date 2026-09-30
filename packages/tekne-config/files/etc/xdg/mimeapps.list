@@ -1,0 +1,12 @@
+# Tekne's default applications (DEC-028). A user's ~/.config/mimeapps.list
+# takes precedence over this file.
+[Default Applications]
+text/html=brave-origin.desktop
+application/xhtml+xml=brave-origin.desktop
+x-scheme-handler/http=brave-origin.desktop
+x-scheme-handler/https=brave-origin.desktop
+application/pdf=org.pwmt.zathura.desktop
+inode/directory=thunar.desktop
+text/plain=org.xfce.mousepad.desktop
+image/png=feh.desktop
+image/jpeg=feh.desktop

@@ -1,0 +1,13 @@
+files/etc/profile.d/tekne-startx.sh etc/profile.d/
+files/usr/bin/* usr/bin/
+files/usr/share/tekne/* usr/share/tekne/
+files/etc/xdg/mimeapps.list etc/xdg/
+files/etc/tekne/nftables.conf etc/tekne/
+files/etc/brave/policies/managed/tekne.json etc/brave/policies/managed/
+files/etc/NetworkManager/conf.d/tekne-privacy.conf etc/NetworkManager/conf.d/
+files/usr/share/firefox-esr/distribution/policies.json usr/share/firefox-esr/distribution/
+files/usr/share/pam-configs/tekne-gnome-keyring usr/share/pam-configs/
+files/etc/rofi.rasi etc/
+files/etc/xdg/dunst/dunstrc.d/50-tekne.conf etc/xdg/dunst/dunstrc.d/
+files/etc/xdg/gtk-3.0/settings.ini etc/xdg/gtk-3.0/
+files/etc/xdg/gtk-4.0/settings.ini etc/xdg/gtk-4.0/

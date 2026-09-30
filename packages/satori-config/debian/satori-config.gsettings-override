@@ -1,7 +1,0 @@
-# satori's GSettings defaults (DEC-034), for apps that read them rather than
-# settings.ini (libadwaita's dark style, file dialogs). Changes a user makes
-# with gsettings or dconf win.
-[org.gnome.desktop.interface]
-color-scheme='prefer-dark'
-gtk-theme='Adwaita-dark'
-icon-theme='Papirus-Dark'

@@ -1,7 +1,0 @@
-keys/xlibre.gpg usr/share/satori/keyrings/
-sources/brave-browser-release.sources etc/apt/sources.list.d/
-sources/satori-xlibre.sources etc/apt/sources.list.d/
-preferences/satori-brave.pref etc/apt/preferences.d/
-preferences/satori-xlibre.pref etc/apt/preferences.d/
-sources/satori-backports.sources etc/apt/sources.list.d/
-preferences/satori-backports.pref etc/apt/preferences.d/

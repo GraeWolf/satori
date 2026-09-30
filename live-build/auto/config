@@ -1,5 +1,5 @@
 #!/bin/sh
-# Every lb config flag for satori (DEC-003). Run by live-build; never type flags by hand.
+# Every lb config flag for Tekne (DEC-003). Run by live-build; never type flags by hand.
 set -e
 
 DEVUAN="http://deb.devuan.org/merged/"
@@ -36,9 +36,9 @@ lb config noauto \
 	--cache true \
 	--cache-packages true \
 	--cache-indices false \
-	--iso-application "satori" \
-	--iso-volume "satori ${SATORI_VERSION:-dev}" \
-	--iso-publisher "satori project" \
+	--iso-application "tekne" \
+	--iso-volume "Tekne ${TEKNE_VERSION:-dev}" \
+	--iso-publisher "Tekne project" \
 	--checksums sha256 \
 	--source false \
 	"${@}"

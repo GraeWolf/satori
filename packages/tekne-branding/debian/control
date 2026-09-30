@@ -1,0 +1,23 @@
+Source: tekne-branding
+Section: misc
+Priority: optional
+Maintainer: Tekne project <noreply@tekne.invalid>
+Build-Depends: debhelper-compat (= 13), librsvg2-bin
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: tekne-branding
+Architecture: all
+Depends: ${misc:Depends}, base-files
+# satori's packages until the rename (DEC-008). Conflicts makes apt remove
+# satori-branding (and its diversions) before this package is unpacked.
+Conflicts: satori-branding
+Replaces: satori-branding
+Description: Tekne branding: os-release, GRUB theme, wallpaper and logo
+ Identifies the system as Tekne: /usr/lib/os-release (and so
+ /etc/os-release) describes Tekne, with Devuan's copy diverted to
+ /usr/lib/os-release.devuan so that base-files upgrades can't restore it.
+ .
+ Also ships Tekne's GRUB theme (copied to /boot/grub/themes/tekne, which
+ GRUB can read before an encrypted root is unlocked), the default wallpaper
+ and the logo. The artwork is licensed CC-BY-SA-4.0.

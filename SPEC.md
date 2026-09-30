@@ -1,12 +1,12 @@
-# satori — Project Specification
+# Tekne — Project Specification
 
 > Living document. Decisions and their rationale live in [DECISIONS.md](DECISIONS.md);
-> this file describes *what* satori is and *how we'll know each phase is done*.
+> this file describes *what* Tekne is and *how we'll know each phase is done*.
 > Detailed designs: [docs/desktop-stack.md](docs/desktop-stack.md), [docs/installer.md](docs/installer.md).
 
 ## 1. Overview
 
-**satori** is a systemd-free, amd64 desktop Linux distribution built as a respin of
+**Tekne** is a systemd-free, amd64 desktop Linux distribution built as a respin of
 **Devuan Excalibur** (Devuan 6, Debian Trixie-based). It ships a preconfigured
 **herbstluftwm** tiling desktop on X11 and a keyboard-driven **TUI installer** built
 with `gum`.
@@ -16,11 +16,11 @@ with `gum`.
 - No systemd as init or as a package, as defined precisely in §4.
 - Opinionated, keyboard-first defaults that a technical user can adopt or strip down easily.
 - The whole build is scripted from this repository. There are no manual or undocumented steps.
-- satori-specific configuration ships as `.deb` packages, so it survives `apt upgrade` and stays under dpkg's control.
+- tekne-specific configuration ships as `.deb` packages, so it survives `apt upgrade` and stays under dpkg's control.
 
 ### Non-goals (v1)
 - Custom kernel or kernel patches. We use Devuan's stock kernel, from `excalibur-backports` (DEC-036).
-- A satori-hosted APT repository. satori packages are built in-repo and baked into the ISO (see DEC-006). Third-party repositories are allowed only under DEC-026.
+- A tekne-hosted APT repository. Tekne packages are built in-repo and baked into the ISO (see DEC-006). Third-party repositories are allowed only under DEC-026.
 - Wayland. herbstluftwm is X11-only.
 - Manual partitioning, dual-boot, or filesystems other than ext4 in the installer.
 - Secure Boot (DEC-016) and Plymouth (DEC-015).
@@ -34,7 +34,7 @@ tiling window manager, a terminal, and editing dotfiles. They want a systemd-fre
 daily driver without hand-assembling Devuan plus a window manager each time.
 
 In practice this means:
-- Documentation can assume Linux literacy. It still has to be complete for anything satori-specific, such as keybindings, config locations, and how to rebuild.
+- Documentation can assume Linux literacy. It still has to be complete for anything tekne-specific, such as keybindings, config locations, and how to rebuild.
 - Defaults should be discoverable (for example a keybinding cheatsheet), but no GUI settings apps are required.
 - A single-user laptop or workstation is the primary target. Server and embedded use are out of scope.
 
@@ -58,24 +58,24 @@ In practice this means:
   - Mirrors, distribution, and archive areas must be set explicitly to Devuan values. live-build defaults to Debian.
   - BIOS and UEFI both boot through GRUB (`--bootloaders "grub-pc grub-efi"`), so there's one boot menu config.
   - live-build's package cache lives outside the per-build work directory, so rebuilds don't re-download everything.
-  - Third-party repositories (DEC-026) are added to the build chroot from the same pinned keys and `.sources` files that `satori-apt-sources` ships. The build fails if a key doesn't match its recorded checksum.
+  - Third-party repositories (DEC-026) are added to the build chroot from the same pinned keys and `.sources` files that `tekne-apt-sources` ships. The build fails if a key doesn't match its recorded checksum.
 - **Build host:** a privileged Devuan Excalibur container (Podman or Docker) defined in `container/`, with the base image pinned by digest (DEC-031). The host OS doesn't matter. It only needs the container engine and root.
 - **In-repo packages:** `packages/*` are built with `debhelper` inside the same container, then placed in `live-build/config/packages.chroot/` before `lb build`.
 
-### 3.3 satori packages
+### 3.3 Tekne packages
 | Package | Contents |
 |---|---|
-| `satori-desktop` | Metapackage that depends on the full desktop stack ([docs/desktop-stack.md](docs/desktop-stack.md)). Installed during the build by a chroot hook, after `satori-apt-sources` has configured the third-party repositories (DEC-026). |
-| `satori-config` | System-wide defaults in `/usr/share/satori/` (used only when the user has no config of their own): the `satori-session` X session, herbstluftwm autostart and keybindings, polybar and picom configs, startx on tty1, the default browser, browser policies, firewall ruleset, NetworkManager MAC randomisation. Helper scripts: `satori-run-once`, `satori-keys`, `satori-powermenu`, `satori-screenshot`, `satori-get-melia` (DEC-029), and later `satori-swap-resize` (DEC-017). |
-| `satori-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026); also Devuan's `excalibur-backports`, pinned to the kernel packages (DEC-036). |
-| `satori-branding` | `os-release` via `dpkg-divert` (owned by `base-files`; `/etc/issue` is a conffile and can't be diverted, see DEC-035), wallpaper, GRUB theme, logo, rendered from `branding/` (DEC-034). |
-| `satori-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)) and the QEMU-only `satori-autoinstall` init script. Installed in the live image only, purged from the target. |
+| `tekne-desktop` | Metapackage that depends on the full desktop stack ([docs/desktop-stack.md](docs/desktop-stack.md)). Installed during the build by a chroot hook, after `tekne-apt-sources` has configured the third-party repositories (DEC-026). |
+| `tekne-config` | System-wide defaults in `/usr/share/tekne/` (used only when the user has no config of their own): the `tekne-session` X session, herbstluftwm autostart and keybindings, polybar and picom configs, startx on tty1, the default browser, browser policies, firewall ruleset, NetworkManager MAC randomisation. Helper scripts: `tekne-run-once`, `tekne-keys`, `tekne-powermenu`, `tekne-screenshot`, `tekne-get-melia` (DEC-029), and later `tekne-swap-resize` (DEC-017). |
+| `tekne-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026); also Devuan's `excalibur-backports`, pinned to the kernel packages (DEC-036). |
+| `tekne-branding` | `os-release` via `dpkg-divert` (owned by `base-files`; `/etc/issue` is a conffile and can't be diverted, see DEC-035), wallpaper, GRUB theme, logo, rendered from `branding/` (DEC-034). |
+| `tekne-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)) and the QEMU-only `tekne-autoinstall` init script. Installed in the live image only, purged from the target. |
 
 Rule: **no loose overlay files for anything a user might need updated.** The
 `includes.chroot/` overlay is reserved for live-session-only tweaks.
 
 Because there's no hosted repo in v1 (DEC-006), installed systems get Devuan updates
-through APT but get satori package updates only by manually installing newer `.deb`s.
+through APT but get Tekne package updates only by manually installing newer `.deb`s.
 This limitation should be documented for users.
 
 ### 3.4 Desktop stack
@@ -100,9 +100,9 @@ Recorded as DEC-022 (accounts) and DEC-023 (everything else).
 - No services listen on the network by default. There's no SSH server.
 
 ### 3.7 Branding
-- Name "satori". `/usr/lib/os-release` diverted to a satori version that keeps `ID_LIKE=devuan debian`.
+- Name "Tekne". `/usr/lib/os-release` diverted to a Tekne version that keeps `ID_LIKE=devuan debian`.
 - GRUB theme on both the live ISO and installed systems. Default wallpaper. Text boot (no Plymouth in v1).
-- Tokyo Night colours throughout, with placeholder ensō artwork until real art exists; GTK uses dark Adwaita with Papirus icons (DEC-034).
+- Tokyo Night colours throughout, with placeholder artwork (a geometric T) until real art exists; GTK uses dark Adwaita with Papirus icons (DEC-034).
 - Devuan and Debian logos and trademarks removed from user-visible branding. Attribution to Devuan kept in `os-release`, the docs, and `/usr/share/doc`.
 
 ## 4. The "no systemd" rule
@@ -124,8 +124,8 @@ sudo scripts/build.sh       # builds container → builds packages/ → lb confi
 ```
 The version comes from the `VERSION` file. A clean checkout of tag `v<VERSION>` builds as `<VERSION>`; anything else builds as `<VERSION>-dev<commit count>.<short commit>` (§5.4).
 Output goes to `out/` (git-ignored):
-- `satori-<version>-amd64.iso` and `.sha256`
-- `satori-<version>-amd64.packages`: the package manifest
+- `tekne-<version>-amd64.iso` and `.sha256`
+- `tekne-<version>-amd64.packages`: the package manifest
 - `build-info.txt`: git SHA, dirty flag, build date, base image digest, build image ID, live-build version, ISO size and checksum, package count
 - `build.log`: the full live-build log
 - `cache/`: live-build's downloaded-package cache, reused between builds (root-owned)
@@ -145,9 +145,9 @@ mirrors. The package manifest records exactly what went in. Bit-for-bit
 reproducibility is a possible later goal.
 
 ### 5.4 Versioning and release
-- Versions follow `<major>.<minor>`, with the Devuan base in the release notes, for example "satori 0.1 (Excalibur)".
+- Versions follow `<major>.<minor>`, with the Devuan base in the release notes, for example "Tekne 0.1 (Excalibur)".
 - Git tags `v0.1` etc. Release artifacts are the ISO, its checksum, the manifest, and build-info.
-- `VERSION` holds the next release (`0.1`, `0.1-rc1`, ...). A clean checkout of tag `v<VERSION>` builds as that version. Anything else builds as `<VERSION>-dev<commit count>.<short commit>`. satori's `.deb`s get the Debian form of the same version, which always increases (DEC-032). After tagging a release, bump `VERSION` to the next one.
+- `VERSION` holds the next release (`0.1`, `0.1-rc1`, ...). A clean checkout of tag `v<VERSION>` builds as that version. Anything else builds as `<VERSION>-dev<commit count>.<short commit>`. Tekne's `.deb`s get the Debian form of the same version, which always increases (DEC-032). After tagging a release, bump `VERSION` to the next one.
 - Releases are published on GitHub Releases (DEC-020). Each asset must be under 2 GiB, so the ISO size is tracked in build-info from Phase 2 on.
 - `CHANGELOG.md` is maintained from Phase 1 onward.
 
@@ -158,7 +158,7 @@ reproducibility is a possible later goal.
 ## 6. Repository layout
 
 ```
-satori/
+tekne/
 ├── README.md
 ├── VERSION                        # base version, e.g. 0.1
 ├── LICENSE                        # GPL-3.0-or-later
@@ -172,18 +172,18 @@ satori/
 │   └── config/
 │       ├── package-lists/
 │       │   ├── base.list.chroot
-│       │   ├── live.list.chroot   # live-only: live-boot, live-config, satori-installer
-│       ├── packages.chroot/       # generated: satori-*.deb (git-ignored)
+│       │   ├── live.list.chroot   # live-only: live-boot, live-config, tekne-installer
+│       ├── packages.chroot/       # generated: tekne-*.deb (git-ignored)
 │       ├── bootloaders/grub-pc/   # GRUB menu for BIOS and UEFI, incl. the serial test entry
 │       ├── includes.chroot/       # live-session-only overlays
 │       └── hooks/{normal,live}/
 ├── packages/
-│   ├── satori-desktop/debian/
-│   ├── satori-config/{debian/,files/}
-│   ├── satori-branding/{debian/,files/}
-│   ├── satori-apt-sources/{debian/,keys/,sources/,preferences/}
-│   └── satori-installer/{debian/,files/}
-├── branding/                      # source SVGs (CC-BY-SA-4.0) → rendered into satori-branding
+│   ├── tekne-desktop/debian/
+│   ├── tekne-config/{debian/,files/}
+│   ├── tekne-branding/{debian/,files/}
+│   ├── tekne-apt-sources/{debian/,keys/,sources/,preferences/}
+│   └── tekne-installer/{debian/,files/}
+├── branding/                      # source SVGs (CC-BY-SA-4.0) → rendered into tekne-branding
 ├── scripts/
 │   ├── build.sh                   # host side: container build + run (needs root)
 │   ├── build-in-container.sh      # container side: live-build, checks, outputs
@@ -218,34 +218,34 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ An automated live boot test (BIOS and UEFI) plus the systemd runtime check pass.
 
 **Phase 2: Desktop stack**. ✔ Complete (2026-09-29). Smoke tests pass on BIOS and UEFI, and the maintainer checked the launcher, audio, network and browser by hand in QEMU. The real-laptop checks passed on the development laptop after the `v0.1-rc1` install (2026-09-29), apart from a missing battery indicator, fixed for rc2.
-- `satori-desktop` and `satori-config` packages. The live session autologs in and starts herbstluftwm.
+- `tekne-desktop` and `tekne-config` packages. The live session autologs in and starts herbstluftwm.
 - ✅ The live session reaches herbstluftwm with the bar, launcher, notifications, the bar's network module (DEC-011), and working audio. `tests/smoke/live-boot.py` checks that every session process is running. Launcher, audio and network are checked by hand in QEMU and on at least one real laptop.
 - ✅ Every added package passes the no-systemd check, including those from third-party repositories. Any substitutions are documented in docs/desktop-stack.md.
 - ✅ Third-party repositories are restricted by their pins: `apt-cache policy` shows no Devuan package replaced by a Brave or XLibre package.
 - ✅ Brave Origin is the default browser.
-- ✅ The DEC-023 security defaults are in place: `tests/smoke/live-boot.py` checks that satori's firewall is loaded and that nothing listens beyond loopback; the browser and NetworkManager policy files are installed.
-- ✅ `satori-get-melia` installs Melia, and it refuses a download whose signature or checksum is wrong.
+- ✅ The DEC-023 security defaults are in place: `tests/smoke/live-boot.py` checks that Tekne's firewall is loaded and that nothing listens beyond loopback; the browser and NetworkManager policy files are installed.
+- ✅ `tekne-get-melia` installs Melia, and it refuses a download whose signature or checksum is wrong.
 
 **Phase 3: Installer**. ✔ Complete (2026-09-29). All four unattended installs pass with hibernate/resume in QEMU, and the maintainer completed an interactive install and the keyring test in QEMU. On real hardware (2026-09-29): the maintainer installed `v0.1-rc1` interactively with LUKS on the development laptop, and it passed the manual checklist, the Phase 2 laptop checks and hibernate/resume. Hibernate/resume without LUKS is checked in QEMU only: the only laptop is encrypted.
-- `satori-installer` (using Excalibur's `gum` package, DEC-021).
+- `tekne-installer` (using Excalibur's `gum` package, DEC-021).
 - ✅ All four unattended install-matrix runs pass (§5.2).
 - ✅ An interactive install in QEMU (`scripts/test-in-qemu.sh --disk`) completes and the installed system boots to the desktop.
 - ✅ An interactive install on real hardware, with LUKS, boots and passes the manual checklist. This includes the Phase 2 desktop checks deferred from QEMU: Wi-Fi, audio, brightness keys, suspend and the lock screen.
 - ✅ Hibernate and resume work in QEMU for all four install cases: `tests/smoke/install.py` hibernates each installed system and checks that the same session resumes. On real hardware too, with and without LUKS (DEC-017).
 - ✅ On an installed system, Brave Origin saves and recalls a password through gnome-keyring without an extra unlock prompt (DEC-030). Moved from Phase 2: the live session autologins, so PAM has no password to unlock the keyring with.
 
-**Release candidate gate (`v0.1-rc1`): before installing on the development laptop**. ✔ Passed (2026-09-29). `v0.1-rc1` (`c77c411`) built clean; the upgrade test moved an installed system from `0.1~dev20` to `0.1~rc1`; live-boot and all four install cases pass. The maintainer pushed the repository, backed up the laptop, disabled Secure Boot, and passed the live-USB hardware check, including the hybrid NVIDIA GPU with `nouveau` loaded (so satori doesn't blacklist it). satori `0.1-rc1` is installed on the development laptop, and Phases 4–6 continue there.
-- The only laptop is also the development machine, and the installer erases the whole disk. So these must pass before satori is installed there. Phases 4–6 then continue on the installed system.
+**Release candidate gate (`v0.1-rc1`): before installing on the development laptop**. ✔ Passed (2026-09-29). `v0.1-rc1` (`c77c411`) built clean; the upgrade test moved an installed system from `0.1~dev20` to `0.1~rc1`; live-boot and all four install cases pass. The maintainer pushed the repository, backed up the laptop, disabled Secure Boot, and passed the live-USB hardware check, including the hybrid NVIDIA GPU with `nouveau` loaded (so Tekne doesn't blacklist it). Tekne `0.1-rc1` is installed on the development laptop, and Phases 4–6 continue there.
+- The only laptop is also the development machine, and the installer erases the whole disk. So these must pass before Tekne is installed there. Phases 4–6 then continue on the installed system.
 - ✅ Package versions increase with every build (DEC-032), and `tests/smoke/upgrade.py` upgrades an installed system from one build's packages to the next and re-runs the installed-system checks. That's how changes reach the laptop while dogfooding (DEC-006).
-- ✅ One documented command installs everything needed to build and test satori on satori (DEC-033).
+- ✅ One documented command installs everything needed to build and test Tekne on Tekne (DEC-033).
 - ✅ `v0.1-rc1` is tagged and built from a clean tree, and its ISO passes `live-boot.py` and `install.py`.
 - ✅ (maintainer) The repository is pushed and the laptop is backed up.
-- ✅ (maintainer) A live-USB hardware check on the laptop passes: Wi-Fi, the AMD GPU on the internal display and an external monitor, audio, brightness keys, suspend/resume, and the hybrid NVIDIA GPU with `nouveau` loaded (boots, suspends, battery drain). If `nouveau` misbehaves, decide whether satori blacklists it.
+- ✅ (maintainer) A live-USB hardware check on the laptop passes: Wi-Fi, the AMD GPU on the internal display and an external monitor, audio, brightness keys, suspend/resume, and the hybrid NVIDIA GPU with `nouveau` loaded (boots, suspends, battery drain). If `nouveau` misbehaves, decide whether Tekne blacklists it.
 - ✅ (maintainer) Secure Boot is disabled in the laptop's firmware (DEC-016).
 
-**Phase 4: Branding**. ✔ Complete (2026-09-30). `satori-branding`, the Tokyo Night theme and placeholder art (DEC-034). The build checks that os-release survives reinstalling `base-files`; the live ISO's GRUB menu shows only satori's theme and entries; `live-boot.py` and all four `install.py` cases pass on `0.1-rc2-dev34`. The console login greeting keeps Devuan's text (DEC-035).
-- `satori-branding`, the GRUB theme, wallpaper, and os-release diversion.
-- ✅ `os-release` still shows satori after `apt install --reinstall base-files`.
+**Phase 4: Branding**. ✔ Complete (2026-09-30). `tekne-branding`, the Tokyo Night theme and placeholder art (DEC-034). The build checks that os-release survives reinstalling `base-files`; the live ISO's GRUB menu shows only Tekne's theme and entries; `live-boot.py` and all four `install.py` cases pass on `0.1-rc2-dev34`. The console login greeting keeps Devuan's text (DEC-035).
+- `tekne-branding`, the GRUB theme, wallpaper, and os-release diversion.
+- ✅ `os-release` still shows Tekne after `apt install --reinstall base-files`.
 - ✅ No Devuan or Debian logos appear on the boot menu, GRUB, or desktop.
 
 **Phase 5: CI and QA**

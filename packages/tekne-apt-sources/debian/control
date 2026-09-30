@@ -1,0 +1,27 @@
+Source: tekne-apt-sources
+Section: admin
+Priority: optional
+Maintainer: Tekne project <noreply@tekne.invalid>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: tekne-apt-sources
+Architecture: all
+Depends: ${misc:Depends}
+# satori's packages until the rename (DEC-008). Conflicts makes apt remove
+# satori-apt-sources (and its diversions) before this package is unpacked.
+Conflicts: satori-apt-sources
+Replaces: satori-apt-sources
+Description: third-party APT repositories for Tekne
+ Configures the APT repositories Tekne needs beyond Devuan stable: Brave
+ (for Brave Origin), XLibre (for the X server), and Devuan's own
+ excalibur-backports (for the kernel). Each repository's signing key is
+ scoped to that repository with Signed-By, and APT pins restrict each one to
+ the packages Tekne takes from it.
+ .
+ Brave's sources file uses the name and key path from Brave's own
+ instructions, which makes brave-keyring's postinst remove the key it would
+ otherwise link into /etc/apt/trusted.gpg.d, where APT trusts it for every
+ repository. The key at that path is Tekne's checksum-pinned copy;
+ brave-keyring's copy is diverted aside.

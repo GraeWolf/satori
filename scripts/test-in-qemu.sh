@@ -1,11 +1,11 @@
 #!/bin/sh
-# Boot satori in a QEMU window for hands-on testing.
+# Boot Tekne in a QEMU window for hands-on testing.
 #   scripts/test-in-qemu.sh [bios|uefi] [--disk] [--installed] [ISO]
 #
-#   (default)     boot the newest out/satori-*-amd64.iso, no disk
+#   (default)     boot the newest out/tekne-*-amd64.iso, no disk
 #   --disk        also attach a virtual disk (out/qemu-test/disk-<mode>.qcow2,
 #                 created blank if missing) to try the installer on:
-#                 run "sudo satori-install" in the live session
+#                 run "sudo tekne-install" in the live session
 #   --installed   boot that virtual disk instead of the ISO
 #
 # Defaults to uefi. Everything stays inside the VM: only the qcow2 file on the
@@ -62,7 +62,7 @@ if [ "${INSTALLED}" = yes ]; then
 	echo "Booting the installed virtual disk (${MODE})"
 	set -- "$@" -boot c
 else
-	[ -n "${ISO}" ] || ISO="$(ls -t "${REPO}"/out/satori-*-amd64.iso 2>/dev/null | head -n1)"
+	[ -n "${ISO}" ] || ISO="$(ls -t "${REPO}"/out/tekne-*-amd64.iso 2>/dev/null | head -n1)"
 	[ -n "${ISO}" ] && [ -f "${ISO}" ] || { echo "error: no ISO found; run sudo scripts/build.sh first" >&2; exit 1; }
 	echo "Booting ${ISO} (${MODE})"
 	set -- "$@" -cdrom "${ISO}" -boot d

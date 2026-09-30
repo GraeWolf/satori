@@ -1,0 +1,15 @@
+# Brave's APT repository, for Brave Origin only (DEC-026, DEC-028).
+# Shipped by tekne-apt-sources; the pin in /etc/apt/preferences.d/tekne-brave.pref
+# stops it providing any other package.
+#
+# The file name and Signed-By path are the ones Brave's own instructions use.
+# brave-keyring's postinst looks for exactly this; when it finds it, it removes
+# the global key it would otherwise link into /etc/apt/trusted.gpg.d/. The key
+# at that path is Tekne's checksum-pinned copy: brave-keyring's own copy is
+# diverted aside by tekne-apt-sources.
+Types: deb
+URIs: https://brave-browser-apt-release.s3.brave.com
+Suites: stable
+Components: main
+Architectures: amd64
+Signed-By: /usr/share/keyrings/brave-browser-archive-keyring.gpg

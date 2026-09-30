@@ -58,7 +58,7 @@ When a decision changes, edit the entry in place and add a dated line to its
 ### DEC-006 In-repo `.deb` packages, no hosted repository
 - **Status:** Decided
 - **Why:** Packaged config survives upgrades, can use `dpkg-divert` for files owned by other packages, and can be cleanly removed. Hosting a repo is deferred to keep v1 small.
-- **Consequence:** Installed systems don't receive satori package updates automatically. Revisit after v0.1.
+- **Consequence:** Installed systems don't receive Tekne package updates automatically. Revisit after v0.1.
 - **History:** 2026-09-28 decided.
 
 ### DEC-007 Audience: technical users
@@ -66,9 +66,11 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Consequence:** No GUI settings apps. The docs may assume Linux literacy. Discoverability is handled with a keybinding cheatsheet.
 - **History:** 2026-09-28 decided.
 
-### DEC-008 Name: satori
+### DEC-008 Name: Tekne
 - **Status:** Decided
-- **History:** 2026-09-28 decided.
+- **Form:** "Tekne" in prose and user-facing text (`os-release` `NAME`, GRUB, the installer); `tekne` for identifiers: `ID=tekne`, package names (`tekne-*`), paths (`/usr/share/tekne`, `/etc/tekne`), commands (`tekne-install`, `tekne-session`, ...), the `inet tekne` firewall table and the ISO file name. It's Greek (τέχνη) for craft.
+- **Migration:** the project was called satori until 0.1-rc2 development. Each `tekne-*` package `Conflicts:` and `Replaces:` its `satori-*` predecessor, so one `apt install --purge ./out/packages/tekne-{apt-sources,branding,config,desktop}_*.deb` removes the satori packages (with their diversions, alternatives and firewall table) and installs Tekne's; `tests/smoke/upgrade.py` checked this on a satori UEFI+LUKS install. Things an install already has keep their old names: the LUKS mapping (`satori_root`), the hostname, and the UEFI boot entry until GRUB is reinstalled.
+- **History:** 2026-09-28 decided as "satori". 2026-09-30: the maintainer renamed the distribution to Tekne; the placeholder art changed from an ensō (satori's Zen meaning) to a geometric T (DEC-034).
 
 ### DEC-009 Architecture: amd64 only
 - **Status:** Decided
@@ -104,7 +106,7 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Status:** Decided
 - **Why:** It's the simplest setup and has the fewest moving parts. elogind still registers the session through PAM. The live session autologins on tty1.
 - **Alternative:** LightDM, if a graphical greeter is wanted later.
-- **Live session:** autologin on tty1–6 comes from satori's own live-config component (`live-build/config/includes.chroot/usr/lib/live/config/0161-satori-autologin`), using agetty's `--autologin`. live-config's `0160-sysvinit` is broken on Excalibur (see docs/desktop-stack.md §2).
+- **Live session:** autologin on tty1–6 comes from Tekne's own live-config component (`live-build/config/includes.chroot/usr/lib/live/config/0161-tekne-autologin`), using agetty's `--autologin`. live-config's `0160-sysvinit` is broken on Excalibur (see docs/desktop-stack.md §2).
 - **History:** 2026-09-28 proposed and confirmed. Same day (Phase 2), added the live-session autologin component.
 
 ### DEC-015 No Plymouth in v1
@@ -125,7 +127,7 @@ When a decision changes, edit the entry in place and add a dated line to its
   - Size: equal to installed RAM, rounded up to the next GiB, so a hibernation image always fits. The installer's minimum disk size grows accordingly ([docs/installer.md](docs/installer.md) §2).
   - Resume: the installer puts `resume=UUID=<root fs UUID> resume_offset=<swapfile physical offset>` (offset from `filefrag -v`) on the kernel command line via `GRUB_CMDLINE_LINUX`. initramfs-tools reads `resume_offset` only from the kernel command line. `/etc/initramfs-tools/conf.d/resume` gets `RESUME=UUID=…` so the resume hook is included. The initramfs unlocks LUKS before it tries to resume, so one passphrase prompt covers both.
   - Trigger: `loginctl hibernate` (elogind), bound in the rofi power menu. The lid close action stays suspend.
-- **Constraints:** The swapfile must not be recreated or moved without updating `resume_offset`. `satori-config` ships `satori-swap-resize SIZE_GIB`, which recreates the swapfile, updates `/etc/default/grub` and runs `update-grub`, and writes `/sys/power/resume_offset` so hibernation works before the next reboot. Hibernation is incompatible with Secure Boot lockdown (DEC-016).
+- **Constraints:** The swapfile must not be recreated or moved without updating `resume_offset`. `tekne-config` ships `tekne-swap-resize SIZE_GIB`, which recreates the swapfile, updates `/etc/default/grub` and runs `update-grub`, and writes `/sys/power/resume_offset` so hibernation works before the next reboot. Hibernation is incompatible with Secure Boot lockdown (DEC-016).
 - **Acceptance:** `tests/smoke/install.py` hibernates and resumes all four install cases in QEMU. On real hardware it passed with LUKS on the development laptop (2026-09-29); without LUKS it's untested on real hardware.
 - **History:** 2026-09-28 proposed as "swapfile, no hibernation". Changed the same day by the maintainer to support hibernation. 2026-09-29 (Phase 3): corrected the resume mechanism. `RESUME_OFFSET` in `conf.d` is not read by initramfs-tools; the offset goes on the kernel command line. Same day, hibernate/resume passed on real hardware with LUKS.
 
@@ -159,17 +161,17 @@ When a decision changes, edit the entry in place and add a dated line to its
 
 ### DEC-023 Security and privacy defaults
 - **Status:** Decided
-- **Defaults** (all shipped by `satori-config`):
-  - **Firewall:** `/etc/satori/nftables.conf`, loaded at boot by the `satori-firewall` init script. Inbound traffic is dropped except loopback, established/related replies, the ICMPv6 and DHCPv6 traffic IPv6 needs, and traffic from local container and VM bridges. Forwarding is allowed only from those bridges, for replies, and for ports a container engine publishes (DNAT); everything else forwarded is dropped. All outbound traffic is allowed.
+- **Defaults** (all shipped by `tekne-config`):
+  - **Firewall:** `/etc/tekne/nftables.conf`, loaded at boot by the `tekne-firewall` init script. Inbound traffic is dropped except loopback, established/related replies, the ICMPv6 and DHCPv6 traffic IPv6 needs, and traffic from local container and VM bridges. Forwarding is allowed only from those bridges, for replies, and for ports a container engine publishes (DNAT); everything else forwarded is dropped. All outbound traffic is allowed.
     - Devuan's `nftables` package ships only a systemd unit, so nothing else would load a ruleset at boot.
-    - The ruleset replaces only its own `inet satori` table and never runs `flush ruleset`, so rules from other software (libvirt, Docker) survive.
-    - Other software's accept rules can't override satori's drops (a drop in any nftables table is final), so the bridges are accepted in satori's own table: `podman*`, `cni-podman*`, `docker0`, `br-*` (Docker's user networks) and `virbr*` (libvirt). Without this, containers and VMs on a bridge network get no DNS and no network at all, which broke building satori on satori (DEC-033). Traffic from outside reaches a bridge only through a port someone publishes deliberately (`podman run -p`).
-    - `satori-firewall` starts after `nftables`, in case `orphan-sysvinit-scripts` is installed later: that script's default config flushes everything.
+    - The ruleset replaces only its own `inet tekne` table and never runs `flush ruleset`, so rules from other software (libvirt, Docker) survive.
+    - Other software's accept rules can't override Tekne's drops (a drop in any nftables table is final), so the bridges are accepted in Tekne's own table: `podman*`, `cni-podman*`, `docker0`, `br-*` (Docker's user networks) and `virbr*` (libvirt). Without this, containers and VMs on a bridge network get no DNS and no network at all, which broke building Tekne on Tekne (DEC-033). Traffic from outside reaches a bridge only through a port someone publishes deliberately (`podman run -p`).
+    - `tekne-firewall` starts after `nftables`, in case `orphan-sysvinit-scripts` is installed later: that script's default config flushes everything.
   - **Nothing listens on the network.** The only listener is `chronyd` on loopback, and there's no SSH server. The smoke test fails if anything else listens beyond loopback.
   - **No `popularity-contest`.**
   - **Firefox ESR:** `/usr/share/firefox-esr/distribution/policies.json` turns off telemetry, studies, Pocket, and sponsored tiles and suggestions.
-  - **Brave Origin:** Origin already removes most telemetry. The binary still honours `BraveP3AEnabled`, `BraveStatsPingEnabled`, `BraveWebDiscoveryEnabled` and `MetricsReportingEnabled`, so `/etc/brave/policies/managed/satori.json` sets all four to false as a backstop.
-  - **NetworkManager:** `/etc/NetworkManager/conf.d/satori-privacy.conf` sets `wifi.scan-rand-mac-address=yes` explicitly. It's NetworkManager's default, pinned so a default change can't undo it.
+  - **Brave Origin:** Origin already removes most telemetry. The binary still honours `BraveP3AEnabled`, `BraveStatsPingEnabled`, `BraveWebDiscoveryEnabled` and `MetricsReportingEnabled`, so `/etc/brave/policies/managed/tekne.json` sets all four to false as a backstop.
+  - **NetworkManager:** `/etc/NetworkManager/conf.d/tekne-privacy.conf` sets `wifi.scan-rand-mac-address=yes` explicitly. It's NetworkManager's default, pinned so a default change can't undo it.
 - **History:** 2026-09-28 recorded (previously only in SPEC.md §3.6). Same day, added the Brave Origin policy check (DEC-028). 2026-09-29 (Phase 2): implemented, with the firewall and listener checks added to the smoke test. 2026-09-29: the maintainer approved accepting local container and VM bridges and published ports, after the firewall stopped `scripts/build.sh` resolving names on satori.
 
 ### DEC-024 Time sync: chrony
@@ -186,16 +188,16 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Status:** Decided
 - **Policy:** An outside repository (anything other than Devuan's) is allowed only if all of these hold:
   1. Its signing key is stored in this repo, and the build checks it against a recorded SHA-256 checksum.
-  2. Its `.sources` entry uses `Signed-By:` for that key alone and ships in the `satori-apt-sources` package, not as a loose file. It stays enabled on installed systems, so they receive updates.
+  2. Its `.sources` entry uses `Signed-By:` for that key alone and ships in the `tekne-apt-sources` package, not as a loose file. It stays enabled on installed systems, so they receive updates.
   3. An `/etc/apt/preferences.d/` pin restricts it to the packages we want from it. Everything else from it gets priority -1, so it can't replace Devuan packages.
   4. Its packages pass the no-systemd rule (SPEC §4), like any other package.
-  5. No package from that repository may leave its key somewhere APT trusts for every repository (such as `/etc/apt/trusted.gpg.d/`). Keeping each key scoped is the whole point of rule 2. Brave's `brave-keyring` links its key there from its postinst, unless it finds Brave's own sources file (`brave-browser-release.sources` with `Signed-By: /usr/share/keyrings/brave-browser-archive-keyring.gpg`). So `satori-apt-sources` ships exactly that file, puts satori's checksum-pinned key at that path, and diverts `brave-keyring`'s copy of the key aside. The build fails if any globally trusted key isn't owned by `devuan-keyring` or `debian-archive-keyring`.
-- **In the build:** live-build's own mechanism for extra repositories (`config/archives/*.key.chroot`) trusts keys globally, so it isn't used. The package lists install `satori-apt-sources`, then the chroot hook `0500-satori-desktop` runs `apt-get update` and installs `satori-desktop`. The build therefore uses exactly the keys, sources and pins that installed systems use. The hook `0510-check-apt-origins` then fails the build if any installed package came from a third-party repository outside its pin.
+  5. No package from that repository may leave its key somewhere APT trusts for every repository (such as `/etc/apt/trusted.gpg.d/`). Keeping each key scoped is the whole point of rule 2. Brave's `brave-keyring` links its key there from its postinst, unless it finds Brave's own sources file (`brave-browser-release.sources` with `Signed-By: /usr/share/keyrings/brave-browser-archive-keyring.gpg`). So `tekne-apt-sources` ships exactly that file, puts Tekne's checksum-pinned key at that path, and diverts `brave-keyring`'s copy of the key aside. The build fails if any globally trusted key isn't owned by `devuan-keyring` or `debian-archive-keyring`.
+- **In the build:** live-build's own mechanism for extra repositories (`config/archives/*.key.chroot`) trusts keys globally, so it isn't used. The package lists install `tekne-apt-sources`, then the chroot hook `0500-tekne-desktop` runs `apt-get update` and installs `tekne-desktop`. The build therefore uses exactly the keys, sources and pins that installed systems use. The hook `0510-check-apt-origins` then fails the build if any installed package came from a third-party repository outside its pin.
 - **Current repositories:**
   - Brave (for `brave-origin*`, DEC-028)
   - XLibre for Devuan (for `xlibre*`/`xserver-xlibre*`, DEC-027)
-  - Devuan `excalibur-backports` was expected to be needed for XLibre, but isn't: every Phase 2 build resolved XLibre 25.2 from Excalibur stable alone. It's enabled for the kernel only (DEC-036). It's Devuan's own archive rather than a third party, but it's scoped the same way: a `.sources` entry in `satori-apt-sources` with `Signed-By` Devuan's key, and a pin limited to the kernel packages.
-- **Why:** Some chosen components aren't in Devuan stable. This doesn't conflict with DEC-006, which is about satori hosting its *own* repository.
+  - Devuan `excalibur-backports` was expected to be needed for XLibre, but isn't: every Phase 2 build resolved XLibre 25.2 from Excalibur stable alone. It's enabled for the kernel only (DEC-036). It's Devuan's own archive rather than a third party, but it's scoped the same way: a `.sources` entry in `tekne-apt-sources` with `Signed-By` Devuan's key, and a pin limited to the kernel packages.
+- **Why:** Some chosen components aren't in Devuan stable. This doesn't conflict with DEC-006, which is about Tekne hosting its *own* repository.
 - **History:** 2026-09-28 decided. Same day (Phase 2), added rule 5 after finding that `brave-keyring` installs a globally trusted key, and recorded how the build applies the policy. 2026-09-30: `excalibur-backports` enabled for the kernel (DEC-036).
 
 ### DEC-027 X server: XLibre
@@ -214,7 +216,7 @@ When a decision changes, edit the entry in place and add a dated line to its
   - Brave Origin is Brave without AI, crypto, VPN, Rewards, Tor and most telemetry, and it's free on Linux.
   - Firefox ESR comes from Devuan's own repositories. It stays as a fallback that doesn't depend on an outside repository.
 - **Source:** `brave-origin` from Brave's official APT repository (DEC-026). Brave's stable channel only, never beta or nightly.
-- **Default:** `/etc/xdg/mimeapps.list` (shipped by satori-config) makes `brave-origin.desktop` the XDG default for web pages and links; a user's `~/.config/mimeapps.list` still wins. `satori-desktop`'s postinst points the `x-www-browser` alternative at `/usr/bin/brave-origin-stable`, on first install only, so a later choice survives upgrades.
+- **Default:** `/etc/xdg/mimeapps.list` (shipped by tekne-config) makes `brave-origin.desktop` the XDG default for web pages and links; a user's `~/.config/mimeapps.list` still wins. `tekne-desktop`'s postinst points the `x-www-browser` alternative at `/usr/bin/brave-origin-stable`, on first install only, so a later choice survives upgrades.
 - **History:** 2026-09-28 decided.
 
 ### DEC-029 Melia: install on demand, not bundled
@@ -224,7 +226,7 @@ When a decision changes, edit the entry in place and add a dated line to its
   - Its redistribution terms don't clearly allow bundling it in an ISO.
   - It updates itself from inside the app, bypassing dpkg.
 - **Design:**
-  - `satori-config` ships `satori-get-melia`. It downloads the current `.deb` and signed `SHA256SUMS` from the project's GitHub releases.
+  - `tekne-config` ships `tekne-get-melia`. It downloads the current `.deb` and signed `SHA256SUMS` from the project's GitHub releases.
   - It checks the signature against a key fingerprint stored in the package, then checks the checksum, then installs the `.deb` with `apt`.
   - A first-run notice or the keybinding cheatsheet mentions it.
 - **Revisit if:** the author grants redistribution permission in writing, or publishes an APT repository.
@@ -235,8 +237,8 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Why:** Brave, Melia, Firefox and NetworkManager all store credentials through the Secret Service API. herbstluftwm provides none.
 - **Design:**
   - At a console login (PAM service `login`), `pam_gnome_keyring` receives the login password, starts the daemon, and creates or unlocks the `login` keyring with it.
-  - `satori-session` then runs `gnome-keyring-daemon --start --components=secrets`, which attaches the running daemon to the X session's D-Bus.
-  - Excalibur's `libpam-gnome-keyring` profile only handles password changes; Debian relies on display managers adding `pam_gnome_keyring` to their own PAM files, and satori has none (DEC-014). So `satori-config` ships the `pam-auth-update` profile `satori-gnome-keyring`: auth and session lines with `only_if=login`, so `sudo` and `su` never start keyring daemons for root.
+  - `tekne-session` then runs `gnome-keyring-daemon --start --components=secrets`, which attaches the running daemon to the X session's D-Bus.
+  - Excalibur's `libpam-gnome-keyring` profile only handles password changes; Debian relies on display managers adding `pam_gnome_keyring` to their own PAM files, and Tekne has none (DEC-014). So `tekne-config` ships the `pam-auth-update` profile `tekne-gnome-keyring`: auth and session lines with `only_if=login`, so `sudo` and `su` never start keyring daemons for root.
   - It has priority -1, so it comes after `pam_elogind` (priority 0), which sets up the `XDG_RUNTIME_DIR` the daemon needs. `pam-auth-update` breaks priority ties by reverse name, which would otherwise put it first.
   - `tests/smoke/install.py` checks, on each installed system after a password login, that the daemon runs, the `login` keyring exists, and the PAM order is right.
 - **History:** 2026-09-28 decided. 2026-09-29 (Phase 3): the maintainer's QEMU test found the keyring asking to be created at first login and to be unlocked at the next; added the `satori-gnome-keyring` PAM profile.
@@ -256,7 +258,7 @@ When a decision changes, edit the entry in place and add a dated line to its
 
 ### DEC-032 Package versions increase with every build
 - **Status:** Decided
-- **Why:** Installed systems get satori updates by installing newer `.deb`s from `out/packages/` (DEC-006). APT only upgrades to a higher version, and every build used to produce version `0.1`.
+- **Why:** Installed systems get Tekne updates by installing newer `.deb`s from `out/packages/` (DEC-006). APT only upgrades to a higher version, and every build used to produce version `0.1`.
 - **Scheme:** `scripts/build.sh` derives the package version from `VERSION` and git; `scripts/build-packages.sh` stamps it into each package's changelog at build time.
   - A clean checkout of tag `v<VERSION>` gets `VERSION` itself, with `-` turned into `~` (`0.1-rc1` becomes `0.1~rc1`, which Debian sorts before `0.1`).
   - Any other build gets `<that>~dev<commit count>.g<short commit>`, e.g. `0.1~rc1~dev131.gb996478`. The commit count rises on every commit, so later builds sort higher, and every dev build sorts before the release it leads to.
@@ -266,39 +268,39 @@ When a decision changes, edit the entry in place and add a dated line to its
 
 ### DEC-033 Developer tools: documented install, not in the ISO
 - **Status:** Decided
-- **Why:** Building and testing satori needs `git`, `podman`, QEMU and OVMF. Putting them in the ISO would push it towards GitHub's 2 GiB asset limit (DEC-020) and burden users who never build satori. This replaces SPEC's original optional `developer.list.chroot`, which was never built.
-- **Design:** The README gives one `apt install` command, using Devuan packages only. On an installed satori it's all that's needed to run `scripts/build.sh` and the smoke tests.
+- **Why:** Building and testing Tekne needs `git`, `podman`, QEMU and OVMF. Putting them in the ISO would push it towards GitHub's 2 GiB asset limit (DEC-020) and burden users who never build Tekne. This replaces SPEC's original optional `developer.list.chroot`, which was never built.
+- **Design:** The README gives one `apt install` command, using Devuan packages only. On an installed Tekne it's all that's needed to run `scripts/build.sh` and the smoke tests.
 - **History:** 2026-09-29 proposed (release candidate gate). Same day, confirmed by the maintainer after building satori on the installed laptop with the README command.
 
 ### DEC-034 Branding: Tokyo Night, placeholder art, CC-BY-SA-4.0
 - **Status:** Decided
-- **Theme:** Tokyo Night (night) everywhere satori styles something: the GRUB theme, wallpaper, herbstluftwm, polybar, rofi, dunst, alacritty and i3lock. Background `#1a1b26`, foreground `#c0caf5`, accent blue `#7aa2f7`, magenta `#bb9af7`, red `#f7768e`, dim `#565f89`.
-- **Artwork:** placeholders until real art exists: an ensō (the Zen brush circle) in blue and magenta, with no text so rendering needs no fonts. Sources are SVGs in `branding/`, rendered to PNG when `satori-branding` is built (the build container has `librsvg2-bin`). Replacing a file with real art of the same name and size needs no code change.
+- **Theme:** Tokyo Night (night) everywhere Tekne styles something: the GRUB theme, wallpaper, herbstluftwm, polybar, rofi, dunst, alacritty and i3lock. Background `#1a1b26`, foreground `#c0caf5`, accent blue `#7aa2f7`, magenta `#bb9af7`, red `#f7768e`, dim `#565f89`.
+- **Artwork:** placeholders until real art exists: a geometric T in a ring, in a blue-to-magenta gradient, with no text so rendering needs no fonts (until the rename to Tekne, an ensō). Sources are SVGs in `branding/`, rendered to PNG when `tekne-branding` is built (the build container has `librsvg2-bin`). Replacing a file with real art of the same name and size needs no code change.
 - **License:** `branding/` is CC-BY-SA-4.0 (DEC-019); the rest of the repository stays GPL-3.0-or-later.
-- **`satori-branding`** (identity): `/usr/lib/os-release` (and so `/etc/os-release`) says `ID=satori`, `ID_LIKE="devuan debian"`, `VERSION_CODENAME=excalibur`, with this build's version, and credits Devuan. Devuan's copy is diverted to `/usr/lib/os-release.devuan`, so reinstalling or upgrading `base-files` can't restore it. live-build's bootstrap stage turns `/etc/os-release` into a frozen copy of Devuan's file (with `IMAGE_ID=live`), which would also reach installed systems, so the build hook `0530-os-release` restores base-files' symlink to `/usr/lib/os-release`, then checks that os-release survives reinstalling `base-files`. Also the GRUB theme, the wallpaper (`/usr/share/backgrounds/satori/satori.png`) and the logo.
-- **GRUB theme:** one `theme.txt` for the live ISO and installed systems, using GRUB's own `unicode.pf2` font. On installed systems `satori-branding` copies it to `/boot/grub/themes/satori`, because with LUKS GRUB can't read `/usr`, and `/etc/default/grub.d/satori-theme.cfg` sets `GRUB_THEME`. The live ISO shows it on screen and a plain text menu on the serial port, which the automated tests use. Its background also replaces live-build's default splash, which is Debian's artwork, and its entries are satori's own ("satori live", "satori live (safe graphics)") instead of live-build's "Live system".
-- **Consequence:** GRUB's distributor name comes from `os-release`, so menu entries read "satori GNU/Linux". On UEFI, the next `grub-install` (for example when the GRUB package is upgraded) also creates an `EFI/satori` boot entry. Systems installed before satori-branding keep their old `devuan` entry alongside it.
-- **Configuration** (`satori-config`, each used only when the user has no config of their own): `/etc/rofi.rasi` selects the rofi theme and is read before `~/.config/rofi/config.rasi`; `/etc/xdg/dunst/dunstrc.d/50-satori.conf` is a drop-in on dunst's own dunstrc; `satori-terminal` runs alacritty with `/usr/share/satori/alacritty.toml` (alacritty 0.15 has no system-wide config) and is now the `x-terminal-emulator` alternative, which had been xterm's `lxterm`.
+- **`tekne-branding`** (identity): `/usr/lib/os-release` (and so `/etc/os-release`) says `ID=tekne`, `ID_LIKE="devuan debian"`, `VERSION_CODENAME=excalibur`, with this build's version, and credits Devuan. Devuan's copy is diverted to `/usr/lib/os-release.devuan`, so reinstalling or upgrading `base-files` can't restore it. live-build's bootstrap stage turns `/etc/os-release` into a frozen copy of Devuan's file (with `IMAGE_ID=live`), which would also reach installed systems, so the build hook `0530-os-release` restores base-files' symlink to `/usr/lib/os-release`, then checks that os-release survives reinstalling `base-files`. Also the GRUB theme, the wallpaper (`/usr/share/backgrounds/tekne/tekne.png`) and the logo.
+- **GRUB theme:** one `theme.txt` for the live ISO and installed systems, using GRUB's own `unicode.pf2` font. On installed systems `tekne-branding` copies it to `/boot/grub/themes/tekne`, because with LUKS GRUB can't read `/usr`, and `/etc/default/grub.d/tekne-theme.cfg` sets `GRUB_THEME`. The live ISO shows it on screen and a plain text menu on the serial port, which the automated tests use. Its background also replaces live-build's default splash, which is Debian's artwork, and its entries are Tekne's own ("Tekne live", "Tekne live (safe graphics)") instead of live-build's "Live system".
+- **Consequence:** GRUB's distributor name comes from `os-release`, so menu entries read "Tekne GNU/Linux". On UEFI, the next `grub-install` (for example when the GRUB package is upgraded) also creates an `EFI/tekne` boot entry. Systems installed before tekne-branding keep their old `devuan` entry alongside it.
+- **Configuration** (`tekne-config`, each used only when the user has no config of their own): `/etc/rofi.rasi` selects the rofi theme and is read before `~/.config/rofi/config.rasi`; `/etc/xdg/dunst/dunstrc.d/50-tekne.conf` is a drop-in on dunst's own dunstrc; `tekne-terminal` runs alacritty with `/usr/share/tekne/alacritty.toml` (alacritty 0.15 has no system-wide config) and is now the `x-terminal-emulator` alternative, which had been xterm's `lxterm`.
 - **GTK and icons:** Devuan packages no Tokyo Night GTK theme, so GTK apps get dark Adwaita (built into GTK) and Papirus-Dark icons (`papirus-icon-theme`, about 23 MB on the ISO), set in `/etc/xdg/gtk-3.0` and `gtk-4.0` `settings.ini` and a GSettings override. A packaged Tokyo Night GTK theme would need a third-party source (DEC-026).
 - **Not changed:** `/etc/issue` and `/etc/issue.net` still name Devuan (DEC-035). `/etc/motd`'s Devuan notice is kept as attribution.
 - **History:** 2026-09-29 decided (Phase 4): the maintainer chose placeholders, CC-BY-SA-4.0 and Tokyo Night. 2026-09-30: the first ISO build failed the os-release check because of live-build's copy; the hook now restores the symlink.
 
 ### DEC-035 Console login greeting (`/etc/issue`)
 - **Status:** Decided: option 1, keep Devuan's text
-- **Problem:** the console login prompt, the first thing an installed satori shows after the LUKS prompt, reads "Devuan GNU/Linux excalibur". `/etc/issue` and `/etc/issue.net` are `base-files` conffiles, and dpkg can't divert a conffile, so SPEC §3.3's "`issue` via `dpkg-divert`" isn't possible.
+- **Problem:** the console login prompt, the first thing an installed Tekne shows after the LUKS prompt, reads "Devuan GNU/Linux excalibur". `/etc/issue` and `/etc/issue.net` are `base-files` conffiles, and dpkg can't divert a conffile, so SPEC §3.3's "`issue` via `dpkg-divert`" isn't possible.
 - **Options:**
   1. Keep Devuan's text. The Phase 4 check is about logos, and this is text. Simplest.
-  2. `satori-branding` rewrites `/etc/issue` on first install, only if it's still Devuan's unmodified text. dpkg then treats it as a local change: a later `base-files` update to that file asks which version to keep (rare, but it happens at Devuan releases). This breaks Debian policy, which says packages don't edit other packages' conffiles.
-  3. The installer points the `getty` lines in `/etc/inittab` at a satori issue file (`agetty --issue-file`). That covers installed systems only, and lives in the installer rather than a package.
-- **Decision:** option 1 for v0.1. The Phase 4 check is about logos, and the greeting is text that also serves as attribution. Revisit if a satori `base-files` becomes worthwhile.
+  2. `tekne-branding` rewrites `/etc/issue` on first install, only if it's still Devuan's unmodified text. dpkg then treats it as a local change: a later `base-files` update to that file asks which version to keep (rare, but it happens at Devuan releases). This breaks Debian policy, which says packages don't edit other packages' conffiles.
+  3. The installer points the `getty` lines in `/etc/inittab` at a Tekne issue file (`agetty --issue-file`). That covers installed systems only, and lives in the installer rather than a package.
+- **Decision:** option 1 for v0.1. The Phase 4 check is about logos, and the greeting is text that also serves as attribution. Revisit if a Tekne `base-files` becomes worthwhile.
 - **History:** 2026-09-29 opened (Phase 4). 2026-09-30: the maintainer chose option 1.
 
 ### DEC-036 Kernel from `excalibur-backports`
 - **Status:** Decided
-- **What:** satori's kernel is Devuan's `linux-image-amd64` from `excalibur-backports` (Debian's trixie-backports build; 7.1.13 when decided), not the stable 6.12 kernel. It's still the stock Devuan/Debian kernel, unpatched.
-- **Why:** satori targets laptops, and the stable kernel wasn't enough for the development laptop (ASUS ROG Zephyrus G15, GA503RM). On 6.12, `hid-asus` failed to set up its internal keyboard (`Asus failed to request functions: -75`), after which the keyboard sent nothing, including at the LUKS prompt. 7.0 and 7.1 reworked that handshake; on 7.1.13 the keyboard, its Fn keys and its backlight all work.
+- **What:** Tekne's kernel is Devuan's `linux-image-amd64` from `excalibur-backports` (Debian's trixie-backports build; 7.1.13 when decided), not the stable 6.12 kernel. It's still the stock Devuan/Debian kernel, unpatched.
+- **Why:** Tekne targets laptops, and the stable kernel wasn't enough for the development laptop (ASUS ROG Zephyrus G15, GA503RM). On 6.12, `hid-asus` failed to set up its internal keyboard (`Asus failed to request functions: -75`), after which the keyboard sent nothing, including at the LUKS prompt. 7.0 and 7.1 reworked that handshake; on 7.1.13 the keyboard, its Fn keys and its backlight all work.
 - **How:**
-  - `satori-apt-sources` ships `/etc/apt/sources.list.d/satori-backports.sources` (`Signed-By` Devuan's archive key) and `/etc/apt/preferences.d/satori-backports.pref`, which pins only the kernel packages (`linux-image-*`, `linux-headers-*`, `linux-base-*`, `linux-binary-*`, `linux-modules-*`, `linux-kbuild-*`, `linux-compiler-*`) at 500. Backports is `NotAutomatic`, so nothing else comes from it unless asked for by name.
+  - `tekne-apt-sources` ships `/etc/apt/sources.list.d/tekne-backports.sources` (`Signed-By` Devuan's archive key) and `/etc/apt/preferences.d/tekne-backports.pref`, which pins only the kernel packages (`linux-image-*`, `linux-headers-*`, `linux-base-*`, `linux-binary-*`, `linux-modules-*`, `linux-kbuild-*`, `linux-compiler-*`) at 500. Backports is `NotAutomatic`, so nothing else comes from it unless asked for by name.
   - In the build, live-build installs the stable kernel before that source exists; the hook `0505-backports-kernel` then upgrades to the backports kernel and purges the stable one, so the image and installed systems carry exactly one kernel. It fails the build if that isn't the result.
   - `tests/smoke/install.py` checks installed systems run the backports kernel.
 - **Trade-offs:** Debian's security team doesn't formally cover backports; the kernel team updates backports kernels, usually shortly after stable. A new kernel series arrives every few months, so there's more change than on stable; the QEMU install tests (including hibernate/resume) are the guard. Firmware stays at stable's versions.

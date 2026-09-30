@@ -1,4 +1,4 @@
-# satori
+# Tekne
 
 A systemd-free desktop respin of Devuan Excalibur: herbstluftwm on X11, a gum TUI
 installer, built with live-build. This is a spec-driven project, so the docs are
@@ -17,6 +17,6 @@ the source of truth.
 - **Work phase by phase** (SPEC.md §7). A phase is done only when all its ✅ criteria pass. Prefer small commits per phase step.
 - **Before adding any package,** check that it exists in Devuan Excalibur and passes the no-systemd rule (SPEC.md §4).
 - **Pin every external build input** by checksum or container digest.
-- **Third-party APT repositories** are allowed only under DEC-026: a pinned key, a `.sources` entry shipped in `satori-apt-sources`, and APT pins limited to specific packages.
-- **Don't add loose config to `includes.chroot/`** unless it's live-session-only. Anything an installed system keeps belongs in a `packages/satori-*` package.
+- **Third-party APT repositories** are allowed only under DEC-026: a pinned key, a `.sources` entry shipped in `tekne-apt-sources`, and APT pins limited to specific packages.
+- **Don't add loose config to `includes.chroot/`** unless it's live-session-only. Anything an installed system keeps belongs in a `packages/tekne-*` package.
 - The maintainer may edit docs directly between sessions. Re-read files rather than relying on memory of earlier sessions.

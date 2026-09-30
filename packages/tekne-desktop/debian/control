@@ -1,0 +1,80 @@
+Source: tekne-desktop
+Section: metapackages
+Priority: optional
+Maintainer: Tekne project <noreply@tekne.invalid>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: tekne-desktop
+Architecture: all
+Depends: ${misc:Depends},
+# Tekne's own configuration, branding and repositories
+ tekne-config,
+ tekne-branding,
+ tekne-apt-sources,
+# Display server and session (DEC-004, DEC-014, DEC-027)
+ xlibre,
+ xinit,
+ dbus-x11,
+ x11-xserver-utils,
+ elogind,
+ libpam-elogind,
+ polkitd,
+# Window manager and desktop components (docs/desktop-stack.md)
+ herbstluftwm,
+ polybar,
+ rofi,
+ dunst,
+ libnotify-bin,
+ picom,
+ lxpolkit,
+ xss-lock,
+ i3lock,
+# Network, audio, Bluetooth, power (DEC-011, DEC-012, DEC-017)
+ network-manager,
+ pipewire,
+ pipewire-pulse,
+ wireplumber,
+ pavucontrol,
+ pamixer,
+ bluez,
+ blueman,
+ brightnessctl,
+ tlp,
+# Keyring (DEC-030)
+ gnome-keyring,
+ libpam-gnome-keyring,
+# Applications
+ alacritty,
+ thunar,
+ gvfs,
+ tumbler,
+ neovim,
+ mousepad,
+ brave-origin,
+ firefox-esr,
+ maim,
+ xclip,
+ copyq,
+ feh,
+ zathura,
+ lxappearance,
+# Theme (DEC-034): Papirus icons with dark Adwaita, next to Tokyo Night
+ papirus-icon-theme,
+# Fonts
+ fonts-noto,
+ fonts-noto-color-emoji,
+ fonts-jetbrains-mono,
+# System services (DEC-023, DEC-024)
+ nftables,
+ chrony
+# satori's packages until the rename (DEC-008). Conflicts makes apt remove
+# satori-desktop (and its diversions) before this package is unpacked.
+Conflicts: satori-desktop
+Replaces: satori-desktop
+Description: Tekne desktop (metapackage)
+ Depends on every component of the Tekne desktop: herbstluftwm on XLibre,
+ with polybar, rofi, dunst, PipeWire, NetworkManager, gnome-keyring and
+ Tekne's default applications. See docs/desktop-stack.md in the Tekne
+ repository for why each one was chosen.

@@ -1,0 +1,11 @@
+tekne-config (0.1) unstable; urgency=medium
+
+  * Initial release: X session, herbstluftwm autostart and keybindings,
+    polybar and picom defaults, startx on tty1, helper scripts and
+    tekne-get-melia.
+  * Security and privacy defaults (DEC-023): tekne-firewall (nftables),
+    Firefox ESR and Brave telemetry policies, Wi-Fi scan MAC randomisation.
+  * pam-auth-update profile so a console login unlocks the GNOME keyring:
+    Excalibur's libpam-gnome-keyring profile only handles password changes.
+
+ -- Tekne project <noreply@tekne.invalid>  Mon, 28 Sep 2026 12:00:00 +0000

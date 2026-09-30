@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = remove ] || [ "$1" = abort-install ] || [ "$1" = disappear ]; then
+	dpkg-divert --package tekne-apt-sources --remove --rename \
+		--divert /usr/share/tekne/diverted/brave-browser-archive-keyring.gpg \
+		/usr/share/keyrings/brave-browser-archive-keyring.gpg
+fi
+
+#DEBHELPER#

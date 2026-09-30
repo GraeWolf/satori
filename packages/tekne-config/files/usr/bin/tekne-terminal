@@ -1,0 +1,11 @@
+#!/bin/sh
+# Tekne's terminal (Mod+Return), registered as the x-terminal-emulator
+# alternative: alacritty with Tekne's Tokyo Night config, unless you have an
+# alacritty config of your own, which then wins. alacritty 0.15 has no
+# system-wide config file, hence this wrapper.
+config="${XDG_CONFIG_HOME:-$HOME/.config}"
+for own in "${config}/alacritty/alacritty.toml" "${config}/alacritty.toml" \
+	"${HOME}/.config/alacritty/alacritty.toml" "${HOME}/.alacritty.toml"; do
+	[ -e "${own}" ] && exec alacritty "$@"
+done
+exec alacritty --config-file /usr/share/tekne/alacritty.toml "$@"

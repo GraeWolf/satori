@@ -54,7 +54,7 @@ class Serial:
 
 
 def newest_iso():
-    isos = sorted(glob.glob(os.path.join(OUT, "satori-*-amd64.iso")), key=os.path.getmtime)
+    isos = sorted(glob.glob(os.path.join(OUT, "tekne-*-amd64.iso")), key=os.path.getmtime)
     return isos[-1] if isos else None
 
 

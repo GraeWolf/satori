@@ -1,0 +1,7 @@
+keys/xlibre.gpg usr/share/tekne/keyrings/
+sources/brave-browser-release.sources etc/apt/sources.list.d/
+sources/tekne-xlibre.sources etc/apt/sources.list.d/
+preferences/tekne-brave.pref etc/apt/preferences.d/
+preferences/tekne-xlibre.pref etc/apt/preferences.d/
+sources/tekne-backports.sources etc/apt/sources.list.d/
+preferences/tekne-backports.pref etc/apt/preferences.d/

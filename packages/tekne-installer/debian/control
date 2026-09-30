@@ -1,0 +1,38 @@
+Source: tekne-installer
+Section: admin
+Priority: optional
+Maintainer: Tekne project <noreply@tekne.invalid>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: tekne-installer
+Architecture: all
+Depends: ${misc:Depends},
+ gum,
+ rsync,
+ cryptsetup,
+ cryptsetup-initramfs,
+ gdisk,
+ parted,
+ dosfstools,
+ e2fsprogs,
+ efibootmgr,
+ grub2-common,
+ grub-pc-bin,
+ grub-efi-amd64-bin,
+ initramfs-tools,
+ locales,
+ keyboard-configuration,
+ debconf
+# satori's packages until the rename (DEC-008). Conflicts makes apt remove
+# satori-installer (and its diversions) before this package is unpacked.
+Conflicts: satori-installer
+Replaces: satori-installer
+Description: Tekne installer (live session only)
+ tekne-install copies the Tekne live system to a whole disk, with optional
+ LUKS2 encryption, on BIOS or UEFI machines, using a keyboard-driven gum
+ interface. It also has an unattended mode for automated tests.
+ .
+ This package belongs to the live image only; the installer purges it from
+ the installed system.

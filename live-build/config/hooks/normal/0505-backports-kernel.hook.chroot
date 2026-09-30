@@ -1,6 +1,6 @@
 #!/bin/sh
-# DEC-036: satori's kernel comes from excalibur-backports. live-build installs
-# linux-image-amd64 from stable before satori-apt-sources' backports source and
+# DEC-036: Tekne's kernel comes from excalibur-backports. live-build installs
+# linux-image-amd64 from stable before tekne-apt-sources' backports source and
 # kernel pin exist; 0500 has since run apt-get update, so upgrading now picks
 # the backports kernel. Then the stable kernel is purged, so the image, and
 # every system installed from it, has exactly one kernel (and the live GRUB
