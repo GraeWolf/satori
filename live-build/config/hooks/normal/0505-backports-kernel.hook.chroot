@@ -1,0 +1,25 @@
+#!/bin/sh
+# DEC-036: satori's kernel comes from excalibur-backports. live-build installs
+# linux-image-amd64 from stable before satori-apt-sources' backports source and
+# kernel pin exist; 0500 has since run apt-get update, so upgrading now picks
+# the backports kernel. Then the stable kernel is purged, so the image, and
+# every system installed from it, has exactly one kernel (and the live GRUB
+# menu one set of entries).
+set -e
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get install -y linux-image-amd64
+
+want="$(dpkg-query -W -f '${Depends}\n' linux-image-amd64 | tr ',' '\n' \
+	| awk '{ print $1 }' | grep '^linux-image-[0-9]' | head -n 1)"
+[ -n "${want}" ] || { echo "FAIL: can't tell which kernel linux-image-amd64 depends on"; exit 1; }
+old="$(dpkg-query -W -f '${Package} ${db:Status-Status}\n' 'linux-image-[0-9]*' \
+	| awk -v want="${want}" '$2 == "installed" && $1 != want { print $1 }')"
+[ -z "${old}" ] || apt-get purge -y ${old}
+
+kernels="$(dpkg-query -W -f '${Package} ${db:Status-Status}\n' 'linux-image-[0-9]*' | awk '$2 == "installed"')"
+[ "$(echo "${kernels}" | wc -l)" -eq 1 ] || { echo "FAIL: expected one kernel, found: ${kernels}"; exit 1; }
+case "$(dpkg-query -W -f '${Version}' "${want}")" in
+	*bpo*) echo "OK: kernel ${want} $(dpkg-query -W -f '${Version}' "${want}") from excalibur-backports" ;;
+	*)     echo "FAIL: ${want} isn't the backports kernel"; exit 1 ;;
+esac

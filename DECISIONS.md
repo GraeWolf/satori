@@ -194,9 +194,9 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Current repositories:**
   - Brave (for `brave-origin*`, DEC-028)
   - XLibre for Devuan (for `xlibre*`/`xserver-xlibre*`, DEC-027)
-  - Devuan `excalibur-backports` was expected to be needed for XLibre, but isn't: every Phase 2 build resolved XLibre 25.2 from Excalibur stable alone. It isn't enabled.
+  - Devuan `excalibur-backports` was expected to be needed for XLibre, but isn't: every Phase 2 build resolved XLibre 25.2 from Excalibur stable alone. It's enabled for the kernel only (DEC-036). It's Devuan's own archive rather than a third party, but it's scoped the same way: a `.sources` entry in `satori-apt-sources` with `Signed-By` Devuan's key, and a pin limited to the kernel packages.
 - **Why:** Some chosen components aren't in Devuan stable. This doesn't conflict with DEC-006, which is about satori hosting its *own* repository.
-- **History:** 2026-09-28 decided. Same day (Phase 2), added rule 5 after finding that `brave-keyring` installs a globally trusted key, and recorded how the build applies the policy.
+- **History:** 2026-09-28 decided. Same day (Phase 2), added rule 5 after finding that `brave-keyring` installs a globally trusted key, and recorded how the build applies the policy. 2026-09-30: `excalibur-backports` enabled for the kernel (DEC-036).
 
 ### DEC-027 X server: XLibre
 - **Status:** Decided, verified on real hardware
@@ -292,3 +292,15 @@ When a decision changes, edit the entry in place and add a dated line to its
   3. The installer points the `getty` lines in `/etc/inittab` at a satori issue file (`agetty --issue-file`). That covers installed systems only, and lives in the installer rather than a package.
 - **Recommendation:** option 1 for v0.1. Revisit if a satori `base-files` becomes worthwhile.
 - **History:** 2026-09-29 opened (Phase 4).
+
+### DEC-036 Kernel from `excalibur-backports`
+- **Status:** Decided
+- **What:** satori's kernel is Devuan's `linux-image-amd64` from `excalibur-backports` (Debian's trixie-backports build; 7.1.13 when decided), not the stable 6.12 kernel. It's still the stock Devuan/Debian kernel, unpatched.
+- **Why:** satori targets laptops, and the stable kernel wasn't enough for the development laptop (ASUS ROG Zephyrus G15, GA503RM). On 6.12, `hid-asus` failed to set up its internal keyboard (`Asus failed to request functions: -75`), after which the keyboard sent nothing, including at the LUKS prompt. 7.0 and 7.1 reworked that handshake; on 7.1.13 the keyboard, its Fn keys and its backlight all work.
+- **How:**
+  - `satori-apt-sources` ships `/etc/apt/sources.list.d/satori-backports.sources` (`Signed-By` Devuan's archive key) and `/etc/apt/preferences.d/satori-backports.pref`, which pins only the kernel packages (`linux-image-*`, `linux-headers-*`, `linux-base-*`, `linux-binary-*`, `linux-modules-*`, `linux-kbuild-*`, `linux-compiler-*`) at 500. Backports is `NotAutomatic`, so nothing else comes from it unless asked for by name.
+  - In the build, live-build installs the stable kernel before that source exists; the hook `0505-backports-kernel` then upgrades to the backports kernel and purges the stable one, so the image and installed systems carry exactly one kernel. It fails the build if that isn't the result.
+  - `tests/smoke/install.py` checks installed systems run the backports kernel.
+- **Trade-offs:** Debian's security team doesn't formally cover backports; the kernel team updates backports kernels, usually shortly after stable. A new kernel series arrives every few months, so there's more change than on stable; the QEMU install tests (including hibernate/resume) are the guard. Firmware stays at stable's versions.
+- **Fallback:** removing the pin and reinstalling `linux-image-amd64` from stable is a package change only.
+- **History:** 2026-09-30 decided by the maintainer, after the backports kernel fixed the development laptop's keyboard.

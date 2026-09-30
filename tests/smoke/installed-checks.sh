@@ -23,6 +23,11 @@ echo "CMDLINE_RESUME=$(sed -n 's/.*resume=UUID=\([^ ]*\).*/\1/p' /proc/cmdline)"
 echo "ROOT_UUID=$(findmnt -no UUID /)"
 
 echo "OS_ID=$(. /etc/os-release && echo "${ID}")"
+# DEC-036: the kernel comes from excalibur-backports.
+case "$(uname -r) $(dpkg-query -W -f '${Version}' linux-image-amd64)" in
+	*bpo*) echo "KERNEL=backports" ;;
+	*)     echo "KERNEL=stable" ;;
+esac
 echo "GRUB_THEME=$([ -f /boot/grub/themes/satori/theme.txt ] && echo present || echo missing)"
 echo "HOSTNAME=$(cat /etc/hostname)"
 echo "TIMEZONE=$(cat /etc/timezone)"

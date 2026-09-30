@@ -19,7 +19,7 @@ with `gum`.
 - satori-specific configuration ships as `.deb` packages, so it survives `apt upgrade` and stays under dpkg's control.
 
 ### Non-goals (v1)
-- Custom kernel or kernel patches. We use Devuan's stock kernel.
+- Custom kernel or kernel patches. We use Devuan's stock kernel, from `excalibur-backports` (DEC-036).
 - A satori-hosted APT repository. satori packages are built in-repo and baked into the ISO (see DEC-006). Third-party repositories are allowed only under DEC-026.
 - Wayland. herbstluftwm is X11-only.
 - Manual partitioning, dual-boot, or filesystems other than ext4 in the installer.
@@ -48,7 +48,7 @@ In practice this means:
 | Archive areas | `main contrib non-free non-free-firmware` (see DEC-013) |
 | Init | `sysvinit-core` |
 | Session/seat | `elogind` + `libpam-elogind`, `polkitd` |
-| Kernel | Devuan/Debian stock `linux-image-amd64` |
+| Kernel | Devuan/Debian stock `linux-image-amd64`, from `excalibur-backports` (DEC-036) |
 | Package manager | APT, unmodified |
 | Third-party repos | Brave (`brave-origin`, `brave-keyring`) and XLibre for Devuan (`xlibre*`), each pinned to specific packages (DEC-026) |
 
@@ -67,7 +67,7 @@ In practice this means:
 |---|---|
 | `satori-desktop` | Metapackage that depends on the full desktop stack ([docs/desktop-stack.md](docs/desktop-stack.md)). Installed during the build by a chroot hook, after `satori-apt-sources` has configured the third-party repositories (DEC-026). |
 | `satori-config` | System-wide defaults in `/usr/share/satori/` (used only when the user has no config of their own): the `satori-session` X session, herbstluftwm autostart and keybindings, polybar and picom configs, startx on tty1, the default browser, browser policies, firewall ruleset, NetworkManager MAC randomisation. Helper scripts: `satori-run-once`, `satori-keys`, `satori-powermenu`, `satori-screenshot`, `satori-get-melia` (DEC-029), and later `satori-swap-resize` (DEC-017). |
-| `satori-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026). |
+| `satori-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026); also Devuan's `excalibur-backports`, pinned to the kernel packages (DEC-036). |
 | `satori-branding` | `os-release` via `dpkg-divert` (owned by `base-files`; `/etc/issue` is a conffile and can't be diverted, see DEC-035), wallpaper, GRUB theme, logo, rendered from `branding/` (DEC-034). |
 | `satori-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)) and the QEMU-only `satori-autoinstall` init script. Installed in the live image only, purged from the target. |
 

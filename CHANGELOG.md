@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Added
+- Kernel from Devuan's `excalibur-backports` (DEC-036): 7.1 instead of
+  stable's 6.12. `satori-apt-sources` adds the suite, pinned to the kernel
+  packages only. Fixes ASUS ROG laptop keyboards that `hid-asus` failed to set
+  up on 6.12 (dead keyboard, even at the LUKS prompt).
 - Branding (Phase 4, DEC-034): the `satori-branding` package. `os-release`
   says satori (Devuan's copy is diverted, so `base-files` upgrades can't bring
   it back), and ships a GRUB theme for the live ISO and installed systems, a
