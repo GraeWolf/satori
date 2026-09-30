@@ -10,11 +10,16 @@
   names, because satori's firewall (DEC-023) dropped the forwarded and inbound
   traffic that a container bridge network needs. The build container now uses
   the host's network.
+- `service satori-firewall status` said "NOT loaded" when run without root,
+  because nft can't read the ruleset then. It now says it needs root.
 
 ### Changed
 - Firewall (DEC-023): traffic from local container and VM bridges (podman,
   Docker, libvirt) is accepted, as are ports a container engine publishes.
   Before, containers and VMs on a bridge network had no network at all.
+- `satori-config` now declares the packages its helper scripts call
+  (herbstluftwm, rofi, maim, xclip and others), instead of relying on
+  `satori-desktop` to install them.
 - The no-systemd allowlist (DEC-010) is empty: `libsystemd0` is no longer in
   the image, because Devuan's `libelogind-compat` replaces it.
 

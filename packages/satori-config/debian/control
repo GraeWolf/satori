@@ -8,7 +8,24 @@ Rules-Requires-Root: no
 
 Package: satori-config
 Architecture: all
-Depends: ${misc:Depends}, curl, gpgv, nftables, libpam-gnome-keyring, libpam-runtime
+Depends: ${misc:Depends},
+# Firewall and keyring PAM profile (DEC-023, DEC-030)
+ nftables,
+ libpam-gnome-keyring,
+ libpam-runtime,
+# Commands the helper scripts in /usr/bin call. The programs the herbstluftwm
+# autostart starts come with satori-desktop.
+ herbstluftwm,
+ procps,
+ rofi,
+ elogind,
+ maim,
+ xclip,
+ libnotify-bin,
+ e2fsprogs,
+ grub2-common,
+ curl,
+ gpgv
 Description: satori desktop defaults and helper scripts
  System-wide defaults for the satori desktop: the X session
  (satori-session), herbstluftwm autostart and keybindings, polybar and picom

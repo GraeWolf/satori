@@ -32,6 +32,12 @@ case "$1" in
 		log_end_msg 0
 		;;
 	status)
+		# nft can't read the ruleset without root, which would look like
+		# "not loaded". 4 is LSB's "status unknown".
+		if [ "$(id -u)" -ne 0 ]; then
+			echo "satori firewall status needs root: sudo service satori-firewall status" >&2
+			exit 4
+		fi
 		if "${NFT}" list table inet satori >/dev/null 2>&1; then
 			echo "satori firewall is loaded"
 		else
