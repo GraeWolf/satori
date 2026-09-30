@@ -14,7 +14,7 @@ set -Eeuo pipefail
 LOG=/var/log/tekne-installer.log
 SOURCE=/run/live/rootfs/filesystem.squashfs
 TARGET=/mnt/tekne-target
-MAPPER=tekne_root
+MAPPER=tekne
 GRUB_DEBS=/usr/share/tekne-installer/debs
 MIN_DISK_GIB=20
 USER_GROUPS="sudo audio video netdev plugdev bluetooth"

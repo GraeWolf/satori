@@ -11,6 +11,10 @@
   geometric T instead of an ensō.
 
 ### Added
+- A styled boot console (DEC-037): Tokyo Night console colours, firmware
+  error spam kept off the screen (`loglevel=3`), and a centred "T E K N E"
+  banner above a centred LUKS passphrase prompt. New installs name the
+  encrypted disk `tekne`. Still text, no Plymouth (DEC-015).
 - Kernel from Devuan's `excalibur-backports` (DEC-036): 7.1 instead of
   stable's 6.12. `tekne-apt-sources` adds the suite, pinned to the kernel
   packages only. Fixes ASUS ROG laptop keyboards that `hid-asus` failed to set

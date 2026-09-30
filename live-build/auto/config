@@ -3,6 +3,9 @@
 set -e
 
 DEVUAN="http://deb.devuan.org/merged/"
+# The Tokyo Night console palette and loglevel=3, as on installed systems
+# (tekne-branding: /etc/default/grub.d/tekne-console.cfg, DEC-037).
+CONSOLE="loglevel=3 vt.default_red=26,247,158,224,122,187,125,169,65,247,158,224,122,187,125,192 vt.default_grn=27,118,206,175,162,154,207,177,72,118,206,175,162,154,207,202 vt.default_blu=38,142,106,104,247,247,255,214,104,142,106,104,247,247,255,245"
 
 lb config noauto \
 	--mode debian \
@@ -28,7 +31,7 @@ lb config noauto \
 	--binary-images iso-hybrid \
 	--bootloaders "grub-pc grub-efi" \
 	--uefi-secure-boot disable \
-	--bootappend-live "boot=live components quiet" \
+	--bootappend-live "boot=live components quiet ${CONSOLE}" \
 	--debian-installer none \
 	--memtest none \
 	--firmware-chroot false \

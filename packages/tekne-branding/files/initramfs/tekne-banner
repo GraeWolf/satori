@@ -1,0 +1,38 @@
+#!/bin/sh
+# Tekne's boot banner (tekne-branding, DEC-037): before the LUKS passphrase
+# prompt (cryptroot runs later, in local-top), clear the console and show the
+# name in Tokyo Night colours. The palette itself comes from vt.default_* on
+# the kernel command line (/etc/default/grub.d/tekne-console.cfg).
+# Only on quiet boots: without "quiet", nothing is cleared, for debugging.
+# Nothing here can stop the boot; every failure is ignored.
+PREREQ=""
+prereqs() { echo "${PREREQ}"; }
+case "$1" in
+	prereqs) prereqs; exit 0 ;;
+esac
+
+grep -qw quiet /proc/cmdline 2>/dev/null || exit 0
+
+spaces() { n="$1"; while [ "${n}" -gt 0 ]; do printf ' '; n=$((n - 1)); done; }
+
+{
+	rows=25
+	cols=80
+	size="$(stty size 2>/dev/null)" && [ -n "${size}" ] && rows="${size% *}" && cols="${size#* }"
+	name="T E K N E"
+	width=9
+	printf '\033[2J\033[H'
+	n=$((rows / 3)); while [ "${n}" -gt 0 ]; do echo; n=$((n - 1)); done
+	spaces $(((cols - width) / 2)); printf '\033[1;34m%s\033[0m\n' "${name}"
+	spaces $(((cols - width) / 2)); printf '\033[1;30m%s\033[0m\n\n' "─────────"
+	# cryptroot prints "Please unlock disk NAME: " where the cursor is
+	# (/usr/lib/cryptsetup/functions), so leave the cursor where that
+	# prompt comes out centred. Only with an encrypted root.
+	disk="$(awk '!/^#/ && NF { print $1; exit }' /cryptroot/crypttab 2>/dev/null)"
+	if [ -n "${disk}" ]; then
+		prompt="Please unlock disk ${disk}: "
+		spaces $(((cols - ${#prompt}) / 2))
+	fi
+} < /dev/console > /dev/console 2>/dev/null
+
+exit 0

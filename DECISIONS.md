@@ -111,8 +111,8 @@ When a decision changes, edit the entry in place and add a dated line to its
 
 ### DEC-015 No Plymouth in v1
 - **Status:** Decided
-- **Why:** It's cosmetic, and it complicates the LUKS prompt and debugging. We'll have a GRUB theme and a text boot instead.
-- **History:** 2026-09-28 proposed and confirmed.
+- **Why:** It's cosmetic, and it complicates the LUKS prompt and debugging. We'll have a GRUB theme and a text boot instead. The text boot is styled instead (DEC-037).
+- **History:** 2026-09-28 proposed and confirmed. 2026-09-30: reconfirmed; the maintainer chose a styled text LUKS screen over Plymouth (DEC-037).
 
 ### DEC-016 Secure Boot not supported in v1
 - **Status:** Decided
@@ -306,3 +306,13 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Trade-offs:** Debian's security team doesn't formally cover backports; the kernel team updates backports kernels, usually shortly after stable. A new kernel series arrives every few months, so there's more change than on stable; the QEMU install tests (including hibernate/resume) are the guard. Firmware stays at stable's versions.
 - **Fallback:** removing the pin and reinstalling `linux-image-amd64` from stable is a package change only.
 - **History:** 2026-09-30 decided by the maintainer, after the backports kernel fixed the development laptop's keyboard.
+
+### DEC-037 Styled text boot and LUKS prompt
+- **Status:** Decided
+- **What:** the text console from GRUB to the login prompt, above all the LUKS passphrase screen, matches the desktop, without Plymouth (DEC-015):
+  - **Palette:** `vt.default_red`/`grn`/`blu` on the kernel command line set the 16 console colours to Tokyo Night, with `#1a1b26` as the background. Installed systems get them from `tekne-branding`'s `/etc/default/grub.d/tekne-console.cfg`; the live ISO from `--bootappend-live` in `live-build/auto/config`. They also apply to console logins.
+  - **Quiet:** `loglevel=3` keeps kernel errors that aren't ours to fix (ACPI BIOS table bugs, the absent PS/2 keyboard) off the screen; they stay in `dmesg`.
+  - **Banner:** `tekne-branding` ships the initramfs script `init-premount/tekne-banner`. On `quiet` boots it clears the console, shows "T E K N E" centred, and leaves the cursor so that cryptroot's "Please unlock disk NAME:" prompt comes out centred below it. It sits before cryptroot rather than in the unlock path (no `keyscript`), so a failure can't stop the disk being unlocked. Without `quiet`, it does nothing, for debugging.
+  - **Disk name:** new installs name the LUKS mapping `tekne`, so the prompt reads "Please unlock disk tekne:". Existing installs keep theirs.
+- **Tested:** in QEMU, a satori UEFI+LUKS install migrated to Tekne shows the banner and centred prompt, and unlocks over the serial console with the banner in its initramfs.
+- **History:** 2026-09-30 decided: the maintainer chose styled text over Plymouth.

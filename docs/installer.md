@@ -38,7 +38,7 @@ unattended paths share every validation and install step.
 8. **Encrypt and format.** Run `cryptsetup luksFormat --type luks2` if encryption was chosen, then `mkfs.vfat` for the ESP and `mkfs.ext4` for the other partitions.
 9. **Copy** the live root to the target with `rsync -aHAX` (excluding `/proc`, `/sys`, `/dev`, `/run`, `/tmp`, `/media`, and live-only paths), and show progress.
 10. **Configure the target** in a chroot:
-    - `fstab` and `crypttab` by UUID
+    - `fstab` and `crypttab` by UUID. The LUKS mapping is named `tekne`, so the boot prompt reads "Please unlock disk tekne:" (DEC-037)
     - Hostname, `/etc/hosts`, timezone, locale, and keyboard (`/etc/default/keyboard`)
     - Create the user, lock root
     - Purge the live packages (`live-boot*`, `live-config*`, `live-tools`) and `tekne-installer`. Remove Tekne's live-only files (`0161-tekne-autologin`, `tekne-serial-getty`), and restore `/etc/inittab` from `/usr/share/sysvinit/inittab`, which drops the live image's serial test getty.

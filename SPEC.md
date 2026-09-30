@@ -101,7 +101,7 @@ Recorded as DEC-022 (accounts) and DEC-023 (everything else).
 
 ### 3.7 Branding
 - Name "Tekne". `/usr/lib/os-release` diverted to a Tekne version that keeps `ID_LIKE=devuan debian`.
-- GRUB theme on both the live ISO and installed systems. Default wallpaper. Text boot (no Plymouth in v1).
+- GRUB theme on both the live ISO and installed systems. Default wallpaper. Text boot (no Plymouth in v1), styled: Tokyo Night console colours and a centred banner above the LUKS prompt (DEC-037).
 - Tokyo Night colours throughout, with placeholder artwork (a geometric T) until real art exists; GTK uses dark Adwaita with Papirus icons (DEC-034).
 - Devuan and Debian logos and trademarks removed from user-visible branding. Attribution to Devuan kept in `os-release`, the docs, and `/usr/share/doc`.
 
