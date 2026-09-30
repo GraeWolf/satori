@@ -284,14 +284,14 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-29 decided (Phase 4): the maintainer chose placeholders, CC-BY-SA-4.0 and Tokyo Night. 2026-09-30: the first ISO build failed the os-release check because of live-build's copy; the hook now restores the symlink.
 
 ### DEC-035 Console login greeting (`/etc/issue`)
-- **Status:** Open (before the Phase 4 acceptance check)
+- **Status:** Decided: option 1, keep Devuan's text
 - **Problem:** the console login prompt, the first thing an installed satori shows after the LUKS prompt, reads "Devuan GNU/Linux excalibur". `/etc/issue` and `/etc/issue.net` are `base-files` conffiles, and dpkg can't divert a conffile, so SPEC §3.3's "`issue` via `dpkg-divert`" isn't possible.
 - **Options:**
   1. Keep Devuan's text. The Phase 4 check is about logos, and this is text. Simplest.
   2. `satori-branding` rewrites `/etc/issue` on first install, only if it's still Devuan's unmodified text. dpkg then treats it as a local change: a later `base-files` update to that file asks which version to keep (rare, but it happens at Devuan releases). This breaks Debian policy, which says packages don't edit other packages' conffiles.
   3. The installer points the `getty` lines in `/etc/inittab` at a satori issue file (`agetty --issue-file`). That covers installed systems only, and lives in the installer rather than a package.
-- **Recommendation:** option 1 for v0.1. Revisit if a satori `base-files` becomes worthwhile.
-- **History:** 2026-09-29 opened (Phase 4).
+- **Decision:** option 1 for v0.1. The Phase 4 check is about logos, and the greeting is text that also serves as attribution. Revisit if a satori `base-files` becomes worthwhile.
+- **History:** 2026-09-29 opened (Phase 4). 2026-09-30: the maintainer chose option 1.
 
 ### DEC-036 Kernel from `excalibur-backports`
 - **Status:** Decided

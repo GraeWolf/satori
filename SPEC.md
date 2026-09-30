@@ -243,7 +243,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ (maintainer) A live-USB hardware check on the laptop passes: Wi-Fi, the AMD GPU on the internal display and an external monitor, audio, brightness keys, suspend/resume, and the hybrid NVIDIA GPU with `nouveau` loaded (boots, suspends, battery drain). If `nouveau` misbehaves, decide whether satori blacklists it.
 - ✅ (maintainer) Secure Boot is disabled in the laptop's firmware (DEC-016).
 
-**Phase 4: Branding**. In progress. `satori-branding`, the Tokyo Night theme and placeholder art are built (DEC-034); `/etc/issue` is open (DEC-035).
+**Phase 4: Branding**. ✔ Complete (2026-09-30). `satori-branding`, the Tokyo Night theme and placeholder art (DEC-034). The build checks that os-release survives reinstalling `base-files`; the live ISO's GRUB menu shows only satori's theme and entries; `live-boot.py` and all four `install.py` cases pass on `0.1-rc2-dev34`. The console login greeting keeps Devuan's text (DEC-035).
 - `satori-branding`, the GRUB theme, wallpaper, and os-release diversion.
 - ✅ `os-release` still shows satori after `apt install --reinstall base-files`.
 - ✅ No Devuan or Debian logos appear on the boot menu, GRUB, or desktop.

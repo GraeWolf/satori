@@ -7,7 +7,7 @@ keyboard-driven installer. See [SPEC.md](SPEC.md) for what's planned and
 **Status:** Phases 1–3 and the release candidate gate are complete, and
 `0.1-rc1` is installed on the development laptop. The live ISO boots to the
 herbstluftwm desktop and installs with `sudo satori-install`. Phase 4
-(branding: Tokyo Night, placeholder art) is in progress.
+(branding: Tokyo Night, placeholder art) is complete; Phase 5 (CI) is next.
 
 ## Build
 
