@@ -7,3 +7,7 @@ files/etc/brave/policies/managed/satori.json etc/brave/policies/managed/
 files/etc/NetworkManager/conf.d/satori-privacy.conf etc/NetworkManager/conf.d/
 files/usr/share/firefox-esr/distribution/policies.json usr/share/firefox-esr/distribution/
 files/usr/share/pam-configs/satori-gnome-keyring usr/share/pam-configs/
+files/etc/rofi.rasi etc/
+files/etc/xdg/dunst/dunstrc.d/50-satori.conf etc/xdg/dunst/dunstrc.d/
+files/etc/xdg/gtk-3.0/settings.ini etc/xdg/gtk-3.0/
+files/etc/xdg/gtk-4.0/settings.ini etc/xdg/gtk-4.0/

@@ -1,0 +1,7 @@
+build/os-release usr/lib/
+build/satori.png usr/share/backgrounds/satori/
+build/background.png usr/share/grub/themes/satori/
+files/grub/theme.txt usr/share/grub/themes/satori/
+files/etc/default/grub.d/satori-theme.cfg etc/default/grub.d/
+branding/logo.svg usr/share/satori/branding/
+build/logo.png usr/share/satori/branding/

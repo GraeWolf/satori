@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- satori placeholder logo: an ensō in Tokyo Night blue and magenta. CC-BY-SA-4.0 -->
+  <defs>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7aa2f7"/>
+      <stop offset="1" stop-color="#bb9af7"/>
+    </linearGradient>
+  </defs>
+  <path d="M 390.4 121.6 A 190 190 0 1 0 443.1 223.0" fill="none"
+        stroke="url(#ink)" stroke-width="34" stroke-linecap="round"/>
+</svg>

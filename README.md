@@ -6,8 +6,8 @@ keyboard-driven installer. See [SPEC.md](SPEC.md) for what's planned and
 
 **Status:** Phases 1–3 and the release candidate gate are complete, and
 `0.1-rc1` is installed on the development laptop. The live ISO boots to the
-herbstluftwm desktop and installs with `sudo satori-install`; branding
-arrives in Phase 4.
+herbstluftwm desktop and installs with `sudo satori-install`. Phase 4
+(branding: Tokyo Night, placeholder art) is in progress.
 
 ## Build
 
@@ -60,7 +60,7 @@ build (DEC-006):
 
 ```sh
 sudo scripts/build.sh --packages-only     # about a minute
-sudo apt install ./out/packages/satori-{apt-sources,config,desktop}_*.deb
+sudo apt install ./out/packages/satori-{apt-sources,branding,config,desktop}_*.deb
 ```
 
 `tests/smoke/upgrade.py` checks this path: it upgrades a system installed from

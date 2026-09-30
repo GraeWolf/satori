@@ -137,8 +137,8 @@ When a decision changes, edit the entry in place and add a dated line to its
 ### DEC-019 Repository license: GPL-3.0-or-later
 - **Status:** Decided
 - **Why:** The repo is mostly scripts and configuration in a GPL-heavy ecosystem. Copyleft keeps derivative respins open.
-- **Scope:** Everything in the repo except `branding/`, which carries its own license in `branding/LICENSE` (to be chosen in Phase 4).
-- **History:** 2026-09-28 decided.
+- **Scope:** Everything in the repo except `branding/`, which carries its own license in `branding/LICENSE`: CC-BY-SA-4.0 (DEC-034).
+- **History:** 2026-09-28 decided. 2026-09-29 (Phase 4): the maintainer chose CC-BY-SA-4.0 for `branding/`.
 
 ### DEC-020 Release hosting: GitHub Releases
 - **Status:** Decided, "for now"
@@ -269,3 +269,26 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Why:** Building and testing satori needs `git`, `podman`, QEMU and OVMF. Putting them in the ISO would push it towards GitHub's 2 GiB asset limit (DEC-020) and burden users who never build satori. This replaces SPEC's original optional `developer.list.chroot`, which was never built.
 - **Design:** The README gives one `apt install` command, using Devuan packages only. On an installed satori it's all that's needed to run `scripts/build.sh` and the smoke tests.
 - **History:** 2026-09-29 proposed (release candidate gate). Same day, confirmed by the maintainer after building satori on the installed laptop with the README command.
+
+### DEC-034 Branding: Tokyo Night, placeholder art, CC-BY-SA-4.0
+- **Status:** Decided
+- **Theme:** Tokyo Night (night) everywhere satori styles something: the GRUB theme, wallpaper, herbstluftwm, polybar, rofi, dunst, alacritty and i3lock. Background `#1a1b26`, foreground `#c0caf5`, accent blue `#7aa2f7`, magenta `#bb9af7`, red `#f7768e`, dim `#565f89`.
+- **Artwork:** placeholders until real art exists: an ensō (the Zen brush circle) in blue and magenta, with no text so rendering needs no fonts. Sources are SVGs in `branding/`, rendered to PNG when `satori-branding` is built (the build container has `librsvg2-bin`). Replacing a file with real art of the same name and size needs no code change.
+- **License:** `branding/` is CC-BY-SA-4.0 (DEC-019); the rest of the repository stays GPL-3.0-or-later.
+- **`satori-branding`** (identity): `/usr/lib/os-release` (and so `/etc/os-release`) says `ID=satori`, `ID_LIKE="devuan debian"`, `VERSION_CODENAME=excalibur`, with this build's version, and credits Devuan. Devuan's copy is diverted to `/usr/lib/os-release.devuan`, so reinstalling or upgrading `base-files` can't restore it; the build hook `0530-check-branding` checks exactly that. Also the GRUB theme, the wallpaper (`/usr/share/backgrounds/satori/satori.png`) and the logo.
+- **GRUB theme:** one `theme.txt` for the live ISO and installed systems, using GRUB's own `unicode.pf2` font. On installed systems `satori-branding` copies it to `/boot/grub/themes/satori`, because with LUKS GRUB can't read `/usr`, and `/etc/default/grub.d/satori-theme.cfg` sets `GRUB_THEME`. The live ISO shows it on screen and a plain text menu on the serial port, which the automated tests use. Its background also replaces live-build's default splash, which is Debian's artwork, and its entries are satori's own ("satori live", "satori live (safe graphics)") instead of live-build's "Live system".
+- **Consequence:** GRUB's distributor name comes from `os-release`, so menu entries read "satori GNU/Linux". On UEFI, the next `grub-install` (for example when the GRUB package is upgraded) also creates an `EFI/satori` boot entry. Systems installed before satori-branding keep their old `devuan` entry alongside it.
+- **Configuration** (`satori-config`, each used only when the user has no config of their own): `/etc/rofi.rasi` selects the rofi theme and is read before `~/.config/rofi/config.rasi`; `/etc/xdg/dunst/dunstrc.d/50-satori.conf` is a drop-in on dunst's own dunstrc; `satori-terminal` runs alacritty with `/usr/share/satori/alacritty.toml` (alacritty 0.15 has no system-wide config) and is now the `x-terminal-emulator` alternative, which had been xterm's `lxterm`.
+- **GTK and icons:** Devuan packages no Tokyo Night GTK theme, so GTK apps get dark Adwaita (built into GTK) and Papirus-Dark icons (`papirus-icon-theme`, about 23 MB on the ISO), set in `/etc/xdg/gtk-3.0` and `gtk-4.0` `settings.ini` and a GSettings override. A packaged Tokyo Night GTK theme would need a third-party source (DEC-026).
+- **Not changed:** `/etc/issue` and `/etc/issue.net` still name Devuan (DEC-035). `/etc/motd`'s Devuan notice is kept as attribution.
+- **History:** 2026-09-29 decided (Phase 4): the maintainer chose placeholders, CC-BY-SA-4.0 and Tokyo Night.
+
+### DEC-035 Console login greeting (`/etc/issue`)
+- **Status:** Open (before the Phase 4 acceptance check)
+- **Problem:** the console login prompt, the first thing an installed satori shows after the LUKS prompt, reads "Devuan GNU/Linux excalibur". `/etc/issue` and `/etc/issue.net` are `base-files` conffiles, and dpkg can't divert a conffile, so SPEC §3.3's "`issue` via `dpkg-divert`" isn't possible.
+- **Options:**
+  1. Keep Devuan's text. The Phase 4 check is about logos, and this is text. Simplest.
+  2. `satori-branding` rewrites `/etc/issue` on first install, only if it's still Devuan's unmodified text. dpkg then treats it as a local change: a later `base-files` update to that file asks which version to keep (rare, but it happens at Devuan releases). This breaks Debian policy, which says packages don't edit other packages' conffiles.
+  3. The installer points the `getty` lines in `/etc/inittab` at a satori issue file (`agetty --issue-file`). That covers installed systems only, and lives in the installer rather than a package.
+- **Recommendation:** option 1 for v0.1. Revisit if a satori `base-files` becomes worthwhile.
+- **History:** 2026-09-29 opened (Phase 4).

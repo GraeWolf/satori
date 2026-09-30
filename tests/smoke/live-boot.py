@@ -46,6 +46,8 @@ CHECK_CMD = (
     '[ $n = 0 ] && break; sleep 1; i=$((i+1)); done; '
     f'for p in {" ".join(DESKTOP_PROCESSES)}; do pgrep -x $p >/dev/null && echo PROC_$p=up || echo PROC_$p=down; done; '
     # DEC-023: satori's firewall is loaded, and nothing listens beyond loopback.
+    # DEC-034: the live system identifies as satori.
+    'echo "OS_ID=$(. /etc/os-release && echo $ID)"; '
     'sudo nft list chain inet satori input 2>/dev/null | grep -q "policy drop" && echo FIREWALL=loaded || echo FIREWALL=missing; '
     "sudo ss -H -tuln | awk '{print $5}' | grep -v -E '^(127\\.|\\[::1\\]|\\[::ffff:127\\.)' | sed 's/^/LISTEN=/'; "
     'echo __SATORI""_END__\n'
@@ -93,9 +95,11 @@ def run(mode, iso):
     print(f"[{mode}] systemd-named packages: {', '.join(packages) or 'none'}")
     print(f"[{mode}] desktop processes not running: {', '.join(down) or 'none'}")
     print(f"[{mode}] firewall: {results.get('FIREWALL')}")
+    print(f"[{mode}] os-release ID: {results.get('OS_ID')}")
     print(f"[{mode}] listening beyond loopback: {', '.join(listening) or 'none'}")
     ok = (results.get("PID1") == "init" and results.get("RUN_SYSTEMD") == "absent" and not down
-          and results.get("FIREWALL") == "loaded" and not listening)
+          and results.get("FIREWALL") == "loaded" and not listening
+          and results.get("OS_ID") == "satori")
     print(f"{'PASS' if ok else 'FAIL'} [{mode}] (serial log: {log_path})")
     return ok
 

@@ -1,0 +1,63 @@
+# satori's GRUB theme (Tokyo Night), for the live ISO and installed systems.
+# Placeholder art: see branding/ in the satori repository (CC-BY-SA-4.0).
+# The font is GRUB's own unicode.pf2 ("Unifont Regular 16"), which every GRUB
+# install and the live ISO carry.
+
+desktop-image: "background.png"
+desktop-color: "#1a1b26"
+title-text: ""
+message-font: "Unifont Regular 16"
+message-color: "#c0caf5"
+terminal-font: "Unifont Regular 16"
+
+# Name, under the ensō in the background
++ label {
+	top = 48%
+	left = 0
+	width = 100%
+	height = 20
+	align = "center"
+	text = "satori"
+	color = "#c0caf5"
+	font = "Unifont Regular 16"
+}
+
++ boot_menu {
+	left = 25%
+	width = 50%
+	top = 55%
+	height = 28%
+	item_font = "Unifont Regular 16"
+	item_color = "#a9b1d6"
+	selected_item_font = "Unifont Regular 16"
+	selected_item_color = "#7aa2f7"
+	item_height = 24
+	item_padding = 4
+	item_spacing = 4
+	icon_width = 0
+	icon_height = 0
+	scrollbar = false
+}
+
++ label {
+	id = "__timeout__"
+	top = 86%
+	left = 0
+	width = 100%
+	height = 20
+	align = "center"
+	text = "@TIMEOUT_NOTIFICATION_MIDDLE@"
+	color = "#565f89"
+	font = "Unifont Regular 16"
+}
+
++ label {
+	top = 100%-40
+	left = 0
+	width = 100%
+	height = 20
+	align = "center"
+	text = "@KEYMAP_SHORT@"
+	color = "#565f89"
+	font = "Unifont Regular 16"
+}

@@ -16,7 +16,7 @@ hc mouseunbind --all
 Mod=Mod4    # Super
 
 # Applications and menus
-hc keybind $Mod-Return spawn alacritty
+hc keybind $Mod-Return spawn satori-terminal
 hc keybind $Mod-space spawn rofi -show drun
 hc keybind $Mod-Tab spawn rofi -show window
 hc keybind $Mod-v spawn copyq toggle
@@ -68,7 +68,7 @@ for i in "${!tag_names[@]}"; do
 	hc keybind "$Mod-Shift-$((i + 1))" move_index "$i"
 done
 
-# Appearance (satori branding arrives in Phase 4)
+# Appearance: Tokyo Night (DEC-034)
 hc attr theme.tiling.reset 1
 hc attr theme.floating.reset 1
 hc set frame_border_width 1
@@ -77,12 +77,12 @@ hc set window_gap 0
 hc set frame_padding 0
 hc set always_show_frame on
 hc set frame_bg_transparent on
-hc set frame_border_active_color '#d79921'
-hc set frame_border_normal_color '#3c3836'
+hc set frame_border_active_color '#7aa2f7'
+hc set frame_border_normal_color '#292e42'
 hc attr theme.border_width 2
-hc attr theme.active.color '#d79921'
-hc attr theme.normal.color '#3c3836'
-hc attr theme.urgent.color '#fb4934'
+hc attr theme.active.color '#7aa2f7'
+hc attr theme.normal.color '#292e42'
+hc attr theme.urgent.color '#f7768e'
 hc set focus_follows_mouse off
 hc set tree_style '╾│ ├└╼─┐'
 
@@ -100,7 +100,12 @@ hc detect_monitors
 herbstclient chain "${queue[@]}"
 
 # Session programs, started once (herbstluftwm re-runs this file on reload)
-xsetroot -solid '#1d2021'
+# Wallpaper from satori-branding, or a plain Tokyo Night background without it
+if [ -r /usr/share/backgrounds/satori/satori.png ]; then
+	feh --no-fehbg --bg-fill /usr/share/backgrounds/satori/satori.png
+else
+	xsetroot -solid '#1a1b26'
+fi
 satori-run-once pipewire
 satori-run-once wireplumber
 satori-run-once pipewire-pulse
@@ -109,7 +114,7 @@ satori-run-once picom picom --config /usr/share/satori/picom.conf
 satori-run-once dunst
 satori-run-once copyq copyq --start-server
 satori-run-once blueman-applet
-satori-run-once xss-lock xss-lock --transfer-sleep-lock -- i3lock --nofork --color=1d2021
+satori-run-once xss-lock xss-lock --transfer-sleep-lock -- i3lock --nofork --color=1a1b26
 
 # polybar's battery module defaults to BAT0 and ADP1, but laptops also use
 # BAT1, AC, ACAD and so on. Pass it the system's own names. Scope "Device"

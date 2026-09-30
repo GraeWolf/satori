@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Added
+- Branding (Phase 4, DEC-034): the `satori-branding` package. `os-release`
+  says satori (Devuan's copy is diverted, so `base-files` upgrades can't bring
+  it back), and ships a GRUB theme for the live ISO and installed systems, a
+  wallpaper and a logo. The artwork is a placeholder ensō, rendered from SVGs in
+  `branding/` (CC-BY-SA-4.0).
+- Tokyo Night colours for herbstluftwm, polybar, rofi, dunst, alacritty and the
+  lock screen; dark Adwaita with Papirus icons for GTK apps.
+- `satori-terminal`: alacritty with satori's config unless you have your own.
+  It's the `x-terminal-emulator` alternative, which had been xterm's `lxterm`.
+- Live ISO boot menu: "satori live" and "satori live (safe graphics)"
+  (`nomodeset`) replace live-build's "Live system" entries and Debian splash.
+- The build container installs `librsvg2-bin`, to render the artwork.
+
 ### Fixed
 - The bar had no battery indicator on laptops whose battery or charger isn't
   named `BAT0`/`ADP1`, polybar's defaults (for example `BAT1` and `ACAD`). The

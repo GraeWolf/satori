@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <!-- satori placeholder GRUB background: a small ensō above the boot menu. CC-BY-SA-4.0 -->
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#1f2335"/>
+      <stop offset="1" stop-color="#16161e"/>
+    </radialGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7aa2f7"/>
+      <stop offset="1" stop-color="#bb9af7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <path d="M 1066.1 223.9 A 150 150 0 1 0 1107.7 304.0" fill="none"
+        stroke="url(#ink)" stroke-width="22" stroke-linecap="round"/>
+</svg>

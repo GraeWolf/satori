@@ -20,6 +20,11 @@ for dir in "${SRC}"/*/; do
 	name="$(basename "${dir}")"
 	echo "==> Building package ${name}"
 	cp -a "${dir}" "${TMP}/${name}"
+	# satori-branding renders the artwork in the repository's branding/
+	# directory, which is licensed separately (CC-BY-SA-4.0, DEC-019).
+	if [ "${name}" = satori-branding ]; then
+		cp -a "${SRC}/../branding" "${TMP}/${name}/branding"
+	fi
 	sed -i "1s/^\(${name}\) ([^)]*)/\1 (${VERSION})/" "${TMP}/${name}/debian/changelog"
 	grep -q "^${name} (${VERSION})" "${TMP}/${name}/debian/changelog" \
 		|| { echo "error: couldn't set ${name}'s version" >&2; exit 1; }

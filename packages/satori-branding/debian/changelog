@@ -1,0 +1,6 @@
+satori-branding (0.1) unstable; urgency=medium
+
+  * Initial release: satori's os-release (Devuan's diverted), GRUB theme,
+    wallpaper and logo. Placeholder artwork in Tokyo Night colours.
+
+ -- satori project <noreply@satori.invalid>  Tue, 29 Sep 2026 12:00:00 +0000

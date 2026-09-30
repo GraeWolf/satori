@@ -9,8 +9,9 @@ Rules-Requires-Root: no
 Package: satori-desktop
 Architecture: all
 Depends: ${misc:Depends},
-# satori's own configuration and repositories
+# satori's own configuration, branding and repositories
  satori-config,
+ satori-branding,
  satori-apt-sources,
 # Display server and session (DEC-004, DEC-014, DEC-027)
  xlibre,
@@ -59,6 +60,8 @@ Depends: ${misc:Depends},
  feh,
  zathura,
  lxappearance,
+# Theme (DEC-034): Papirus icons with dark Adwaita, next to Tokyo Night
+ papirus-icon-theme,
 # Fonts
  fonts-noto,
  fonts-noto-color-emoji,

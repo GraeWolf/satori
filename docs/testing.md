@@ -23,8 +23,9 @@ from the stick and RAM. Do this on any machine before installing satori on it
 2. Disable Secure Boot in the firmware setup (DEC-016); satori's boot chain
    isn't signed.
 3. Boot from the stick (usually via a one-time boot menu key such as F12, F9
-   or Esc) and pick the first "satori" entry. The desktop starts on its own;
-   the live user is `user`, password `live`.
+   or Esc) and pick "satori live". If the screen stays black, try "satori live
+   (safe graphics)". The desktop starts on its own; the live user is `user`,
+   password `live`.
 
 ### Checklist
 

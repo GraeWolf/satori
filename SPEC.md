@@ -68,7 +68,7 @@ In practice this means:
 | `satori-desktop` | Metapackage that depends on the full desktop stack ([docs/desktop-stack.md](docs/desktop-stack.md)). Installed during the build by a chroot hook, after `satori-apt-sources` has configured the third-party repositories (DEC-026). |
 | `satori-config` | System-wide defaults in `/usr/share/satori/` (used only when the user has no config of their own): the `satori-session` X session, herbstluftwm autostart and keybindings, polybar and picom configs, startx on tty1, the default browser, browser policies, firewall ruleset, NetworkManager MAC randomisation. Helper scripts: `satori-run-once`, `satori-keys`, `satori-powermenu`, `satori-screenshot`, `satori-get-melia` (DEC-029), and later `satori-swap-resize` (DEC-017). |
 | `satori-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026). |
-| `satori-branding` | `os-release`/`issue` via `dpkg-divert` (these files are owned by `base-files`), wallpapers, GRUB theme, logo assets. |
+| `satori-branding` | `os-release` via `dpkg-divert` (owned by `base-files`; `/etc/issue` is a conffile and can't be diverted, see DEC-035), wallpaper, GRUB theme, logo, rendered from `branding/` (DEC-034). |
 | `satori-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)) and the QEMU-only `satori-autoinstall` init script. Installed in the live image only, purged from the target. |
 
 Rule: **no loose overlay files for anything a user might need updated.** The
@@ -102,6 +102,7 @@ Recorded as DEC-022 (accounts) and DEC-023 (everything else).
 ### 3.7 Branding
 - Name "satori". `/usr/lib/os-release` diverted to a satori version that keeps `ID_LIKE=devuan debian`.
 - GRUB theme on both the live ISO and installed systems. Default wallpaper. Text boot (no Plymouth in v1).
+- Tokyo Night colours throughout, with placeholder ensō artwork until real art exists; GTK uses dark Adwaita with Papirus icons (DEC-034).
 - Devuan and Debian logos and trademarks removed from user-visible branding. Attribution to Devuan kept in `os-release`, the docs, and `/usr/share/doc`.
 
 ## 4. The "no systemd" rule
@@ -152,7 +153,7 @@ reproducibility is a possible later goal.
 
 ### 5.5 Licensing
 - Everything in the repo except `branding/`: GPL-3.0-or-later (DEC-019), full text in `LICENSE`.
-- Branding assets: licensed separately, noted in `branding/LICENSE`.
+- Branding assets in `branding/`: CC-BY-SA-4.0 (DEC-019, DEC-034), full text in `branding/LICENSE`.
 
 ## 6. Repository layout
 
@@ -182,7 +183,7 @@ satori/
 │   ├── satori-branding/{debian/,files/}
 │   ├── satori-apt-sources/{debian/,keys/,sources/,preferences/}
 │   └── satori-installer/{debian/,files/}
-├── branding/                      # source assets (SVG etc.) → rendered into satori-branding
+├── branding/                      # source SVGs (CC-BY-SA-4.0) → rendered into satori-branding
 ├── scripts/
 │   ├── build.sh                   # host side: container build + run (needs root)
 │   ├── build-in-container.sh      # container side: live-build, checks, outputs
@@ -242,7 +243,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ (maintainer) A live-USB hardware check on the laptop passes: Wi-Fi, the AMD GPU on the internal display and an external monitor, audio, brightness keys, suspend/resume, and the hybrid NVIDIA GPU with `nouveau` loaded (boots, suspends, battery drain). If `nouveau` misbehaves, decide whether satori blacklists it.
 - ✅ (maintainer) Secure Boot is disabled in the laptop's firmware (DEC-016).
 
-**Phase 4: Branding**
+**Phase 4: Branding**. In progress. `satori-branding`, the Tokyo Night theme and placeholder art are built (DEC-034); `/etc/issue` is open (DEC-035).
 - `satori-branding`, the GRUB theme, wallpaper, and os-release diversion.
 - ✅ `os-release` still shows satori after `apt install --reinstall base-files`.
 - ✅ No Devuan or Debian logos appear on the boot menu, GRUB, or desktop.

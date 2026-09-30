@@ -68,6 +68,7 @@ def expected(mode, luks):
         "HOSTNAME": ANSWERS["HOSTNAME"], "TIMEZONE": ANSWERS["TZ"],
         "LANG": ANSWERS["LOCALE"], "KEYMAP": ANSWERS["KEYMAP"],
         "ROOT_PASSWORD": "L", "FIREWALL": "loaded",
+        "OS_ID": "satori", "GRUB_THEME": "present",
         "GRUB_PKG": "grub-efi-amd64" if mode == "uefi" else "grub-pc",
         "HIBERNATE": "resumed",
         "KEYRING_DAEMON": "running", "LOGIN_KEYRING": "unlocked", "PAM_ORDER": "ok",

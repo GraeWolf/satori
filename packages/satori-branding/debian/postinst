@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+THEME=/usr/share/grub/themes/satori
+BOOT_THEME=/boot/grub/themes/satori
+
+if [ "$1" = configure ]; then
+	# GRUB reads its theme from /boot: with LUKS, the root filesystem (and
+	# /usr) isn't readable until the initramfs unlocks it. On the live image
+	# this copy lands in the squashfs, and satori-install copies it on.
+	rm -rf "${BOOT_THEME}"
+	mkdir -p "$(dirname "${BOOT_THEME}")"
+	cp -r "${THEME}" "${BOOT_THEME}"
+	# Only on an installed system: the live image has no GRUB configuration.
+	if [ -e /boot/grub/grub.cfg ] && command -v update-grub >/dev/null 2>&1; then
+		update-grub
+	fi
+fi
+
+#DEBHELPER#

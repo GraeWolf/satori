@@ -1,0 +1,16 @@
+#!/bin/sh
+# Phase 4 acceptance (SPEC §7, DEC-034): os-release says satori, and still does
+# after base-files is reinstalled, because satori-branding diverts Devuan's
+# copy. Also checks the GRUB theme reached /boot, where satori-install finds it.
+set -e
+export DEBIAN_FRONTEND=noninteractive
+
+os_id() { (. /etc/os-release && echo "${ID}"); }
+
+[ "$(os_id)" = satori ] || { echo "FAIL: os-release ID is $(os_id), not satori"; exit 1; }
+apt-get install -y --reinstall base-files
+[ "$(os_id)" = satori ] || { echo "FAIL: reinstalling base-files restored os-release ID $(os_id)"; exit 1; }
+dpkg-divert --list /usr/lib/os-release | grep -q satori-branding \
+	|| { echo "FAIL: /usr/lib/os-release isn't diverted by satori-branding"; exit 1; }
+[ -f /boot/grub/themes/satori/theme.txt ] || { echo "FAIL: GRUB theme missing from /boot"; exit 1; }
+echo "OK: os-release is satori's and survives reinstalling base-files; GRUB theme in /boot"

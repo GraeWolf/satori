@@ -41,6 +41,14 @@ for deb in /out/packages/*.deb; do
 	esac
 done
 
+# The live ISO's GRUB uses satori-branding's theme, the same one installed
+# systems get (DEC-034). Its background also replaces live-build's default
+# splash.png, which is Debian's artwork.
+mkdir -p "${WORK}/branding" "${WORK}/config/bootloaders/grub-pc/themes"
+dpkg-deb -x /out/packages/satori-branding_*_all.deb "${WORK}/branding"
+cp -a "${WORK}/branding/usr/share/grub/themes/satori" "${WORK}/config/bootloaders/grub-pc/themes/"
+cp "${WORK}/branding/usr/share/grub/themes/satori/background.png" "${WORK}/config/bootloaders/grub-pc/splash.png"
+
 cd "${WORK}"
 lb config 2>&1 | tee -a /out/build.log
 lb build 2>&1 | tee -a /out/build.log

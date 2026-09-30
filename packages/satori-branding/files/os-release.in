@@ -1,0 +1,12 @@
+# satori's os-release, shipped by satori-branding. satori is based on Devuan
+# GNU/Linux 6 (excalibur); Devuan's own copy is diverted to
+# /usr/lib/os-release.devuan.
+PRETTY_NAME="satori @VERSION@ (excalibur)"
+NAME="satori"
+VERSION_ID="@VERSION_ID@"
+VERSION="@VERSION@ (excalibur)"
+VERSION_CODENAME=excalibur
+ID=satori
+ID_LIKE="devuan debian"
+HOME_URL="https://github.com/GraeWolf/satori"
+BUG_REPORT_URL="https://github.com/GraeWolf/satori/issues"

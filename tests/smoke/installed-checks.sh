@@ -22,6 +22,8 @@ echo "CMDLINE_OFFSET=$(sed -n 's/.*resume_offset=\([0-9]*\).*/\1/p' /proc/cmdlin
 echo "CMDLINE_RESUME=$(sed -n 's/.*resume=UUID=\([^ ]*\).*/\1/p' /proc/cmdline)"
 echo "ROOT_UUID=$(findmnt -no UUID /)"
 
+echo "OS_ID=$(. /etc/os-release && echo "${ID}")"
+echo "GRUB_THEME=$([ -f /boot/grub/themes/satori/theme.txt ] && echo present || echo missing)"
 echo "HOSTNAME=$(cat /etc/hostname)"
 echo "TIMEZONE=$(cat /etc/timezone)"
 echo "LANG=$(sed -n 's/^LANG=//p' /etc/default/locale | tr -d '"')"

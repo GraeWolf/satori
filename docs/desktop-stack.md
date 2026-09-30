@@ -27,7 +27,7 @@ and configured by `satori-config`.
 | Audio | `pipewire`, `pipewire-pulse`, `wireplumber`, `pavucontrol`, `pamixer` | DEC-012 |
 | Bluetooth | `bluez`, `blueman` | |
 | Power/laptop | elogind (lid/suspend/hibernate, DEC-017), `brightnessctl`, `tlp` | Check that tlp has no systemd dependency |
-| Terminal | `alacritty` | `x-terminal-emulator` alternative |
+| Terminal | `alacritty` | Started through `satori-terminal`, satori's `x-terminal-emulator` alternative, which adds satori's config (DEC-034) |
 | File manager | `thunar` + `gvfs`, `tumbler` | Removable media and trash. `tumbler` provides Thunar's thumbnails |
 | Editor | `neovim` (CLI) + `mousepad` (GUI) | |
 | Browser | `brave-origin` (default), `firefox-esr` (fallback) | DEC-028. Brave Origin from Brave's APT repo (DEC-026). Default set by `/etc/xdg/mimeapps.list` (satori-config) and by pointing the `x-www-browser` alternative at `brave-origin-stable` on first install (satori-desktop postinst). Firefox policies in satori-config |
@@ -37,7 +37,7 @@ and configured by `satori-config`.
 | Clipboard | `xclip`, `copyq` | `clipmenu` isn't packaged in Excalibur; CopyQ replaces it (`Mod+v`). `cliphist` and `clipman` are Wayland-only |
 | Images/PDF | `feh` (also sets wallpaper), `zathura` | |
 | Fonts | `fonts-noto`, `fonts-noto-color-emoji`, `fonts-jetbrains-mono` | |
-| Theming | GTK theme and icon theme TBD in Phase 4, `lxappearance` | |
+| Theming | Tokyo Night colours; dark Adwaita (GTK) and `papirus-icon-theme`, `lxappearance` | DEC-034. No Tokyo Night GTK theme is packaged in Devuan |
 | Firewall | `nftables` + satori ruleset | DEC-023 |
 | Time sync | `chrony` | DEC-024. Must not use systemd-timesyncd |
 
@@ -69,12 +69,14 @@ Debian's standard `startx` → `Xsession` path, so a user's own `~/.xinitrc` or
    - `lxpolkit`, `picom` (with `/usr/share/satori/picom.conf`), `dunst`,
      `copyq --start-server`, `blueman-applet`
    - `xss-lock --transfer-sleep-lock -- i3lock`
-   - `xsetroot -solid` as a background colour until Phase 4 adds a wallpaper
+   - the wallpaper, `/usr/share/backgrounds/satori/satori.png` from `satori-branding`, set with `feh` (it isn't a running process)
    - `polybar` with `/usr/share/satori/polybar/config.ini`
 
 `herbstluftwm`, `polybar`, `dunst` and `nftables` each own their default config file as a
-conffile. satori never overwrites or diverts those files; it passes its own files from
-`/usr/share/satori/` with each program's config option instead.
+conffile. satori never overwrites or diverts those files. It passes its own files from
+`/usr/share/satori/` with each program's config option, or uses a place the program reads
+in addition to its own file: `/etc/xdg/dunst/dunstrc.d/` for dunst, `/etc/rofi.rasi` for
+rofi.
 
 ## 3. Keybindings (defaults)
 
@@ -84,7 +86,7 @@ shown by `satori-keys` on `Mod+F1`. The bindings themselves are in
 
 | Keys | Action |
 |---|---|
-| `Mod+Return` | Terminal |
+| `Mod+Return` | Terminal (`satori-terminal`) |
 | `Mod+Space` | rofi launcher |
 | `Mod+Shift+Space` | Cycle frame layout (herbstluftwm's default was `Mod+Space`) |
 | `Mod+Tab` | rofi window switcher |
