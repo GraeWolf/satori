@@ -107,6 +107,13 @@ else
 	xsetroot -solid '#1a1b26'
 fi
 tekne-run-once pipewire
+# WirePlumber and pipewire-pulse exit if PipeWire isn't listening yet, which
+# left some sessions without audio: wait (up to 5 s) for its socket first.
+pw_socket="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/pipewire-0"
+for _ in $(seq 50); do
+	[ -S "${pw_socket}" ] && break
+	sleep 0.1
+done
 tekne-run-once wireplumber
 tekne-run-once pipewire-pulse
 tekne-run-once lxpolkit

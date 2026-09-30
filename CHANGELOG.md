@@ -33,6 +33,10 @@
 - The build container installs `librsvg2-bin`, to render the artwork.
 
 ### Fixed
+- Audio sometimes missing after login: WirePlumber exits if PipeWire isn't
+  listening yet, and the session started them together. The autostart now
+  waits (up to 5 s) for PipeWire's socket first. Seen in 1 of 3 UEFI live
+  boots of `0.1-rc2-dev37`.
 - The bar had no battery indicator on laptops whose battery or charger isn't
   named `BAT0`/`ADP1`, polybar's defaults (for example `BAT1` and `ACAD`). The
   herbstluftwm autostart now detects the names from `/sys/class/power_supply`.
