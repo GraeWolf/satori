@@ -15,6 +15,8 @@
 - Firewall (DEC-023): traffic from local container and VM bridges (podman,
   Docker, libvirt) is accepted, as are ports a container engine publishes.
   Before, containers and VMs on a bridge network had no network at all.
+- The no-systemd allowlist (DEC-010) is empty: `libsystemd0` is no longer in
+  the image, because Devuan's `libelogind-compat` replaces it.
 
 ## 0.1-rc1 (2026-09-29)
 

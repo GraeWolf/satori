@@ -109,7 +109,7 @@ Recorded as DEC-022 (accounts) and DEC-023 (everything else).
 An image **passes** only if all of these hold:
 1. PID 1 is sysvinit's `init`, and `/run/systemd/system` doesn't exist.
 2. None of these packages are installed: `systemd`, `systemd-sysv`, `systemd-timesyncd`, `systemd-resolved`, `systemd-boot`, `libpam-systemd`.
-3. Every installed package whose name contains `systemd` is on an explicit allowlist in `tests/systemd-allowlist.txt`. After Phase 0 it contains only `libsystemd0` (DEC-010). Each entry needs a comment explaining why. The base package list must include `opensysusers` so that nothing pulls in `systemd-standalone-sysusers`.
+3. Every installed package whose name contains `systemd` is on an explicit allowlist in `tests/systemd-allowlist.txt`. It's empty: Phase 0 allowed `libsystemd0`, which the desktop image no longer has (DEC-010). Each entry needs a comment explaining why. The base package list must include `opensysusers` so that nothing pulls in `systemd-standalone-sysusers`.
 
 Rules 2 and 3 are checked by `scripts/check-no-systemd.sh` against every build's
 package manifest. Rule 1 is checked at runtime by the QEMU smoke test. A failure

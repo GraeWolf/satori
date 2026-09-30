@@ -77,11 +77,11 @@ When a decision changes, edit the entry in place and add a dated line to its
 ### DEC-010 Definition of "systemd-free"
 - **Status:** Decided
 - See [SPEC.md §4](SPEC.md#4-the-no-systemd-rule). A package whose name contains `systemd` is allowed only through a commented entry in `tests/systemd-allowlist.txt`.
-- **Allowlist after Phase 0:** `libsystemd0` only. It's a shared library with no daemon, and `libpam-modules` depends on it, so it's unavoidable on any Devuan system with PAM login.
+- **Allowlist:** empty. Phase 0 allowlisted `libsystemd0`, a shared library with no daemon that `libpam-modules` depends on. The desktop image doesn't have it: Devuan's `libelogind-compat` replaces it (docs/desktop-stack.md), and the `0.1-rc1` manifest has no package whose name contains `systemd`.
 - **Required substitutions:**
   - `opensysusers` (Devuan's systemd-free implementation) for the virtual package `systemd-sysusers`. Without it, apt satisfies dependencies like `cron-daemon-common`'s `systemd | systemd-standalone-sysusers | systemd-sysusers` with Debian's `systemd-standalone-sysusers`, which is built from systemd's source. `opensysusers` must be in the base package list.
   - Devuan provides `eudev` (and `libudev1` from it) in place of systemd's udev. This needs no action.
-- **History:** 2026-09-28 decided. Same day, Phase 0 finalised the allowlist and recorded the `opensysusers` substitution.
+- **History:** 2026-09-28 decided. Same day, Phase 0 finalised the allowlist and recorded the `opensysusers` substitution. 2026-09-29: the maintainer emptied the allowlist, since `libsystemd0` no longer appears in the image.
 
 ### DEC-011 Networking: NetworkManager (nmcli/nmtui)
 - **Status:** Decided
@@ -252,7 +252,7 @@ When a decision changes, edit the entry in place and add a dated line to its
   - live-build needs chroots, mounts and device nodes, which require a rootful, privileged container. Rootless Podman can't create device nodes, so debootstrap fails there.
   - live-build runs in the container's own filesystem, so there are no bind-mount `nodev` problems. Only the `.deb` package cache is kept on the host (`out/cache/`).
 - **Updating the pins:** Change the digest or the live-build version and checksums in the Containerfile in one commit, and note it in CHANGELOG.md.
-- **History:** 2026-09-28 decided (Phase 1).
+- **History:** 2026-09-28 decided (Phase 1). 2026-09-29: the image build and the build run use the host's network (`--network=host`). On satori the firewall (DEC-023, before its amendment) blocked a bridge network's DNS, and the build needs no network isolation.
 
 ### DEC-032 Package versions increase with every build
 - **Status:** Decided
