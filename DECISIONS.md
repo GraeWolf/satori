@@ -328,3 +328,17 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Pinning:** actions are pinned by commit (`actions/checkout` v7.0.1, `actions/upload-artifact` v7.0.1), per the rule that every external build input is pinned. The runner image itself isn't pinnable; the build happens inside the digest-pinned container, so it only supplies Docker, QEMU and OVMF.
 - **Not covered:** `tests/smoke/upgrade.py` (it needs an install kept from an earlier build), and real hardware (docs/testing.md).
 - **History:** 2026-09-30 proposed (Phase 5). 2026-10-01: the first run on `master` was green (run 36802153183); the maintainer confirmed the design and asked for docs-only commits to skip the build.
+
+### DEC-039 Releases created by CI from a tested tag
+- **Status:** Proposed
+- **What:** pushing a `v*` tag makes CI publish the release, so the files on GitHub Releases are exactly the ones its tests passed on. Today these steps are manual ([docs/building.md](docs/building.md), "Release").
+- **Design:** a second job, `release`, in `.github/workflows/build.yml`:
+  - It runs only for `v*` tags, and only after `build-and-test` passes.
+  - Only this job gets `permissions: contents: write`. The build job stays read-only, so the 30-minute build with root never holds a token that can write to the repository.
+  - It downloads the `tekne-iso` artifact with `actions/download-artifact`, pinned by commit (v8.0.1, `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c`), and creates the release with the runner's `gh`, using the job's own token.
+  - **Checks before uploading:** `build-info.txt` must show the tag's version (e.g. `0.1` for `v0.1`) and `git_dirty: no`, which proves it was a clean build of the tag; the ISO's `.sha256` must verify; every file must be under GitHub's 2 GiB limit (DEC-020); and CHANGELOG.md must have a section for the version, which becomes the release notes. Any failure stops the release.
+  - **Files:** the ISO, its `.sha256`, the package manifest and `build-info.txt`.
+  - **Draft first:** the release is created as a draft, so a person reads it and presses "Publish". Tags with a `-` (e.g. `v0.1-rc2`) are marked as pre-releases.
+- **Why:** removes the download-and-reupload of a 2 GB file by hand; ties every release to a green test run; keeps a human decision before anything is public.
+- **Alternatives:** keep the manual steps; or publish without a draft, which is fully automatic but leaves no review before a release is public.
+- **History:** 2026-10-01 proposed (Phase 6), at the maintainer's request.
