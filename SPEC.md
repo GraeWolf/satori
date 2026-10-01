@@ -189,6 +189,7 @@ tekne/
 │   ├── build-in-container.sh      # container side: live-build, checks, outputs
 │   ├── build-packages.sh
 │   ├── check-no-systemd.sh
+│   ├── ci-release.sh              # CI: draft GitHub release from a tested tag (DEC-039)
 │   └── test-in-qemu.sh
 ├── tests/
 │   ├── systemd-allowlist.txt
@@ -252,7 +253,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - A CI pipeline builds on push and runs the automated tests. `docs/testing.md` has the manual checklist.
 - ✅ A green CI run on `master` (the default branch) produces downloadable ISO artifacts.
 
-**Phase 6: Docs and first release**. In progress: `docs/building.md`, `docs/customizing.md`, the README and the CHANGELOG are written; the `v0.1` release is next.
+**Phase 6: Docs and first release**. In progress: `docs/building.md`, `docs/customizing.md`, the README and the CHANGELOG are written; CI creates draft releases from tested tags (DEC-039); the `v0.1` release is next.
 - `docs/building.md`, `docs/customizing.md`, README, and CHANGELOG.
 - ✅ The `v0.1` tag is released with its ISO, checksum, manifest, and build-info.
 

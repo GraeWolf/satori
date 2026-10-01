@@ -96,7 +96,8 @@ low power state before suspecting Tekne.
 `master`, every pull request and every tag, except commits that only change
 Markdown or license texts. A green run keeps the ISO, checksum, manifest and
 build-info as the `tekne-iso` artifact for 30 days; a failed run keeps the
-build and serial logs.
+build and serial logs. For a `v*` tag, a second job turns a green run into a
+draft release (see "Release" below).
 
 ## Where to change things
 
@@ -133,16 +134,30 @@ current ones, and the manifest records exactly which (SPEC §5.3).
 
 ## Release
 
-Releases are published on GitHub Releases (DEC-020). Each file must be under
-2 GiB; the ISO's size is in `build-info.txt`.
+Releases are published on GitHub Releases (DEC-020) and created by CI from a
+tested tag (DEC-039).
 
-1. Set `VERSION` to the release (e.g. `0.1`), move CHANGELOG.md's "Unreleased"
-   entries under a heading for it, and commit.
-2. Tag and push: `git tag -a v0.1 -m "Tekne 0.1" && git push origin master v0.1`.
-   CI builds the tag, which is a clean checkout of `v<VERSION>`, so the ISO is
-   named `tekne-0.1-amd64.iso` and its packages `0.1`.
-3. When that run is green, download its `tekne-iso` artifact and attach the
-   ISO, `.sha256`, `.packages` and `build-info.txt` to a GitHub release for the
-   tag, with the CHANGELOG entry as its notes.
-4. Set `VERSION` to the next version (e.g. `0.2-rc1`) and commit, so later dev
+1. Set `VERSION` to the release (e.g. `0.1`, or `0.1-rc2` for a release
+   candidate). In CHANGELOG.md, move the "Unreleased" entries under a heading
+   for it, `## 0.1 (YYYY-MM-DD)`, and commit.
+2. Tag and push:
+
+   ```sh
+   git tag -a v0.1 -m "Tekne 0.1"
+   git push origin master v0.1
+   ```
+
+   CI builds the tag (a clean checkout of `v<VERSION>`, so the ISO is named
+   `tekne-0.1-amd64.iso` and its packages are `0.1`) and runs every test.
+3. If they pass, the `release` job runs `scripts/ci-release.sh`. It checks
+   that `build-info.txt` shows a clean build of exactly that version, that the
+   ISO's checksum verifies, that every file is under GitHub's 2 GiB limit, and
+   that CHANGELOG.md has the version's section. Then it creates a **draft**
+   release with the ISO, `.sha256`, `.packages` and `build-info.txt`, and the
+   CHANGELOG section as notes. Tags with a `-` are marked as pre-releases.
+4. Review the draft on GitHub and press "Publish".
+5. Set `VERSION` to the next version (e.g. `0.2-rc1`) and commit, so later dev
    builds sort above the release.
+
+If a check fails, nothing is released; the job log says which check. To try
+the checks on a local build: `DRY_RUN=1 scripts/ci-release.sh v0.1 out`.

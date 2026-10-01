@@ -106,3 +106,35 @@ jobs:
             out/install-test/**/serial-*.log
           if-no-files-found: ignore
           retention-days: 30
+
+  # DEC-039: for a v* tag that passed every test, create the GitHub release
+  # from the very files that were tested. Only this job can write to the
+  # repository; the build job above keeps a read-only token.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-and-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download the tested ISO
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: tekne-iso
+          path: release
+
+      # Checks the build is a clean build of this tag, the checksum, the 2 GiB
+      # limit and the CHANGELOG section, then creates a draft release
+      # (a pre-release for -rc tags) for a person to review and publish.
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: scripts/ci-release.sh "${{ github.ref_name }}" release
+

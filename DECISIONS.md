@@ -330,8 +330,8 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-30 proposed (Phase 5). 2026-10-01: the first run on `master` was green (run 36802153183); the maintainer confirmed the design and asked for docs-only commits to skip the build.
 
 ### DEC-039 Releases created by CI from a tested tag
-- **Status:** Proposed
-- **What:** pushing a `v*` tag makes CI publish the release, so the files on GitHub Releases are exactly the ones its tests passed on. Today these steps are manual ([docs/building.md](docs/building.md), "Release").
+- **Status:** Decided
+- **What:** pushing a `v*` tag makes CI create the release, so the files on GitHub Releases are exactly the ones its tests passed on. The steps are in [docs/building.md](docs/building.md), "Release"; the checks are in `scripts/ci-release.sh`, which can be dry-run locally (`DRY_RUN=1`).
 - **Design:** a second job, `release`, in `.github/workflows/build.yml`:
   - It runs only for `v*` tags, and only after `build-and-test` passes.
   - Only this job gets `permissions: contents: write`. The build job stays read-only, so the 30-minute build with root never holds a token that can write to the repository.
@@ -341,4 +341,4 @@ When a decision changes, edit the entry in place and add a dated line to its
   - **Draft first:** the release is created as a draft, so a person reads it and presses "Publish". Tags with a `-` (e.g. `v0.1-rc2`) are marked as pre-releases.
 - **Why:** removes the download-and-reupload of a 2 GB file by hand; ties every release to a green test run; keeps a human decision before anything is public.
 - **Alternatives:** keep the manual steps; or publish without a draft, which is fully automatic but leaves no review before a release is public.
-- **History:** 2026-10-01 proposed (Phase 6), at the maintainer's request.
+- **History:** 2026-10-01 proposed (Phase 6), at the maintainer's request. Same day, decided by the maintainer and implemented as the `release` job and `scripts/ci-release.sh`.

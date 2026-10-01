@@ -11,6 +11,9 @@
   geometric T instead of an ensō.
 
 ### Added
+- Releases from CI (DEC-039): pushing a `v*` tag builds and tests it, then
+  `scripts/ci-release.sh` checks the build and creates a draft GitHub release
+  with the ISO, checksum, manifest and build-info.
 - Docs (Phase 6): `docs/customizing.md` (changing an installed system) and
   `docs/building.md` (building, testing, releasing, and where to change
   things); the README links them and says how to try Tekne.
