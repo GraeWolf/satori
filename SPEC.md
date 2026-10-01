@@ -20,7 +20,7 @@ with `gum`.
 
 ### Non-goals (v1)
 - Custom kernel or kernel patches. We use Devuan's stock kernel, from `excalibur-backports` (DEC-036).
-- A tekne-hosted APT repository. Tekne packages are built in-repo and baked into the ISO (see DEC-006). Third-party repositories are allowed only under DEC-026.
+- Hosting or mirroring Devuan packages. Tekne packages are built in-repo and baked into the ISO (DEC-006). From 0.2, Tekne's own APT repository carries only those packages (DEC-040). Third-party repositories are allowed only under DEC-026.
 - Wayland. herbstluftwm is X11-only.
 - Manual partitioning, dual-boot, or filesystems other than ext4 in the installer.
 - Secure Boot (DEC-016) and Plymouth (DEC-015).
@@ -51,6 +51,7 @@ In practice this means:
 | Kernel | Devuan/Debian stock `linux-image-amd64`, from `excalibur-backports` (DEC-036) |
 | Package manager | APT, unmodified |
 | Third-party repos | Brave (`brave-origin`, `brave-keyring`) and XLibre for Devuan (`xlibre*`), each pinned to specific packages (DEC-026) |
+| Tekne repo | From 0.2: `https://graewolf.github.io/tekne/apt/`, pinned to `tekne-*` packages (DEC-040) |
 
 ### 3.2 Build tooling
 - **Debian's live-build** (`1:20250505+deb13u1`, pinned by checksum), configured for Devuan (DEC-003). Devuan's own `live-build` package is a 2016 fork without UEFI support, so it isn't used.
@@ -67,16 +68,17 @@ In practice this means:
 |---|---|
 | `tekne-desktop` | Metapackage that depends on the full desktop stack ([docs/desktop-stack.md](docs/desktop-stack.md)). Installed during the build by a chroot hook, after `tekne-apt-sources` has configured the third-party repositories (DEC-026). |
 | `tekne-config` | System-wide defaults in `/usr/share/tekne/` (used only when the user has no config of their own): the `tekne-session` X session, herbstluftwm autostart and keybindings, polybar and picom configs, startx on tty1, the default browser, browser policies, firewall ruleset, NetworkManager MAC randomisation. Helper scripts: `tekne-run-once`, `tekne-keys`, `tekne-powermenu`, `tekne-screenshot`, `tekne-get-melia` (DEC-029), and later `tekne-swap-resize` (DEC-017). |
-| `tekne-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026); also Devuan's `excalibur-backports`, pinned to the kernel packages (DEC-036). |
+| `tekne-apt-sources` | Third-party `.sources` entries, their pinned signing keys, and `/etc/apt/preferences.d/` pins (DEC-026); also Devuan's `excalibur-backports`, pinned to the kernel packages (DEC-036), and from 0.2 Tekne's own repository, pinned to `tekne-*` (DEC-040). |
 | `tekne-branding` | `os-release` via `dpkg-divert` (owned by `base-files`; `/etc/issue` is a conffile and can't be diverted, see DEC-035), wallpaper, GRUB theme, logo, rendered from `branding/` (DEC-034). |
 | `tekne-installer` | The gum TUI installer ([docs/installer.md](docs/installer.md)) and the QEMU-only `tekne-autoinstall` init script. Installed in the live image only, purged from the target. |
 
 Rule: **no loose overlay files for anything a user might need updated.** The
 `includes.chroot/` overlay is reserved for live-session-only tweaks.
 
-Because there's no hosted repo in v1 (DEC-006), installed systems get Devuan updates
+In 0.1 there's no hosted repository (DEC-006), so installed systems get Devuan updates
 through APT but get Tekne package updates only by manually installing newer `.deb`s.
-This limitation should be documented for users.
+From 0.2, Tekne's packages are also published in a signed APT repository (DEC-040,
+§8), and `apt upgrade` covers both.
 
 ### 3.4 Desktop stack
 herbstluftwm on Xorg, started with `startx` from a tty1 login (DEC-014). The full
@@ -257,7 +259,83 @@ Each phase is one or more small commits and ends only when every one of its crit
 - `docs/building.md`, `docs/customizing.md`, README, and CHANGELOG.
 - ✅ The `v0.1` tag is released with its ISO, checksum, manifest, and build-info.
 
-## 8. Notes for Claude Code sessions
+## 8. Tekne 0.2
+
+> **Status:** agreed by the maintainer (2026-10-01) and recorded as DEC-040, which
+> amends DEC-006. Phase 7 is in progress, and nothing is built yet. The docs that
+> describe how updates work today (README, `docs/customizing.md`) change in Phase 10,
+> when the repository exists.
+
+### 8.1 Theme: updates through APT
+
+0.1's largest gap is updates. Devuan's packages update with `apt upgrade`, but
+Tekne's own `tekne-*` packages reach an installed system only when someone builds
+them from this repository and installs the `.deb`s by hand (DEC-006, §3.3). That
+works for the maintainer and nobody else, and a fix to a firewall rule or a kernel
+pin waits until each user rebuilds. DEC-006 said to revisit this after v0.1.
+
+0.2 makes an installed Tekne updatable with apt alone: Tekne's packages are
+published in a signed APT repository, held to the same rules as any outside
+repository (DEC-026), and CI tests the upgrade from the last release on every build.
+0.2 does little else, so that the new update path gets the release's full attention.
+
+### 8.2 Goals
+1. **A signed Tekne APT repository.** Installed systems get `tekne-*` updates with `apt update && apt upgrade`. The repository is held to DEC-026's rules like any third-party repository: its key is pinned by checksum in `tekne-apt-sources`, its `.sources` entry uses `Signed-By` with that key alone, and an APT pin limits it to `tekne-*` packages.
+2. **Publishing behind the existing human gate.** The repository changes only when a person publishes a GitHub release (DEC-039), and it's built from that release's tested `.deb`s. Neither a push nor a tag reaches users' APT on its own.
+3. **Tested upgrades.** On every build, CI installs the previous release from its published ISO and upgrades it to the current build through apt. This closes the `upgrade.py` gap in DEC-038's "Not covered".
+4. **A defined path from 0.1.** A 0.1 system joins the repository with one documented step. After that, plain apt upgrades are enough.
+
+### 8.3 Not in 0.2
+§1's non-goals still apply. In particular:
+- **Secure Boot (DEC-016).** Its kernel lockdown blocks hibernation (DEC-017), so it needs a design decision of its own, not packaging work. It's a candidate for a later spike.
+- **Installer changes:** no manual partitioning, dual-boot or btrfs (DEC-005, DEC-018).
+- **Dev builds in the repository.** Only tested pre-releases and releases are published. Dogfooding between candidates still uses `scripts/build.sh --packages-only`.
+- **Devuan packages in the repository.** The repository carries Tekne's own packages only, and `tekne-installer` isn't published, since it belongs only in the live image.
+
+### 8.4 Design
+A summary; DEC-040 is the full decision.
+- **Hosting:** GitHub Pages for this repository, next to the releases (DEC-020). Tekne's published `.deb`s total about 350 KB per release, well inside Pages' limits. Installed systems contact GitHub on `apt update`, as they already do for XLibre's repository. The URL, `https://graewolf.github.io/tekne/apt/`, is written into every installed system.
+- **Suites:** `excalibur` carries releases. `excalibur-rc` carries pre-releases as well as releases, so a system that follows it also receives finals. Both have a `main` component and are generated with `apt-ftparchive` in the build container. `tekne-apt-sources` points at `excalibur`. A tester switches to `excalibur-rc` by editing one line of its `.sources` file.
+- **Signing key:** a dedicated repository key, not anyone's personal key. Custody: the primary key stays offline with the maintainer. A signing subkey with a one-year expiry is a GitHub Actions secret in a `repo-publish` environment that needs the maintainer's approval to run, and only the publishing job can read it. That's the same split DEC-039 makes for the write token. Rotation ships the new public key in a `tekne-apt-sources` update before the old subkey expires.
+- **Publishing:** the `release` job (DEC-039) also attaches the `tekne-*` `.deb`s, minus `tekne-installer`, to the draft release, so they're tested files too. A new `publish-repo` job runs when a person publishes that release (`release: published`). It checks each `.deb` against checksums recorded in the build's `build-info.txt`, regenerates the suites, signs them and deploys Pages.
+- **Build isolation:** hook `0500` runs `apt-get update` with `tekne-apt-sources`'s files in place, so the Tekne source would be active inside the build chroot. The build disables it there, so an ISO only ever contains the packages built from its own commit.
+
+### 8.5 Maintainer's answers (2026-10-01)
+- **Q1, key custody:** a signing subkey held by CI behind an approval gate, with the primary key offline. Signing locally with the offline key was the alternative.
+- **Q2, URL:** the plain `graewolf.github.io` address, not a domain of the maintainer's own.
+- **Q3, pre-release suite:** yes, `excalibur-rc`.
+- **Q4, anything else in 0.2:** no. Real artwork, a second-machine hardware check, DEC-035's option 3 and a Secure Boot spike all stay out.
+
+### 8.6 Phases and acceptance criteria
+Phase numbers continue from §7.
+
+**Phase 7: Repository decisions.**
+- DEC-040 for the repository (hosting, suites, key custody, publishing). DEC-006 gets a History line pointing to it, and §1, §3.1 and §3.3 change to match. Done 2026-10-01.
+- (maintainer) Generate the key. Then create the `repo-publish` environment with the maintainer as required reviewer, store the signing subkey as its secret, and set Pages to deploy from GitHub Actions.
+- ✅ The maintainer has marked the repository decision Decided, and Q1 to Q4 are answered. Passed 2026-10-01 (DEC-040, §8.5).
+- ✅ The repository key exists. Its public half is in `packages/tekne-apt-sources/keys/` with a line in `SHA256SUMS`, and its fingerprint is in DECISIONS.md. The primary private key isn't on any machine or service CI can reach.
+
+**Phase 8: Building and publishing the repository.**
+- A script builds a signed repository from a directory of `.deb`s with a given key. `tekne-apt-sources` ships the source, key and pin. The `release` job attaches the `.deb`s, and the `publish-repo` job publishes them.
+- ✅ The same script, run locally with a throwaway test key, produces the same layout as CI, so the repository can be tested without the real key.
+- ✅ On an installed system, `apt-cache policy` shows the Tekne repository offering only `tekne-*` packages. Everything else from it is at priority -1 (DEC-026 rule 3). The build's global-key check still passes, because the Tekne key is trusted only through `Signed-By`.
+- ✅ The build never fetches from the published repository. Every `tekne-*` package in the manifest is the one built from this commit, and `0510-check-apt-origins` fails the build otherwise.
+- ✅ apt refuses the repository when its index is signed by another key, or when a `.deb` doesn't match its `Packages` checksum. This is tested in QEMU against a local copy, not the live site.
+- ✅ Publishing a pre-release updates `excalibur-rc` only, and publishing a release updates both suites. A push, a tag or an unpublished draft changes nothing, and `publish-repo` is the only job that can read the signing key.
+- ✅ `publish-repo` refuses any `.deb` whose checksum differs from the one in that build's `build-info.txt`.
+
+**Phase 9: Upgrade testing in CI.**
+- `tests/smoke/upgrade.py` can start from a release ISO and upgrade through apt from a repository served to the VM. That repository is built by Phase 8's script with the test key. Only the URL and the key differ from what installed systems use. The pin and the rest of the `.sources` entry are the shipped ones.
+- ✅ The previous release's ISO is a pinned input: its checksum is committed in this repository and updated at each release, and CI checks the download against it.
+- ✅ On every CI build, a UEFI+LUKS system installed from the previous release's ISO upgrades to the current build with `apt update && apt upgrade`, then passes `installed-checks.sh` and hibernate/resume. Until 0.2 is out, the previous release is 0.1, so this test also runs Goal 4's one-time step.
+
+**Phase 10: Migration, docs, and the 0.2 release.**
+- README ("Update an installed Tekne"), `docs/customizing.md`, `docs/building.md` (publishing and key rotation), and CHANGELOG with 0.1's one-time step. DEC-039 is updated for the extra assets and the `publish-repo` job.
+- ✅ (maintainer) The development laptop, running 0.1, joins `excalibur-rc` with the documented one-time step and installs `0.2-rc1` from it with `apt upgrade`. The next candidate then arrives with plain `apt update && apt upgrade`.
+- ✅ The key-rotation steps work against test keys: a system that trusts the old subkey accepts a `tekne-apt-sources` update carrying the new one, then verifies a repository signed with it.
+- ✅ `v0.2` is released through CI (DEC-039), and publishing it updates `excalibur`. On a system freshly installed from the 0.2 ISO, `apt list --upgradable` shows no `tekne-*` packages.
+
+## 9. Notes for Claude Code sessions
 - Keep SPEC.md and DECISIONS.md current. When a decision's status or content changes, update DECISIONS.md (with a dated History line) and every doc that references its `DEC-nnn` ID in the same commit.
 - Before adding any package, check that it exists in Excalibur and run the no-systemd check. Package names and systemd-free substitutes change between releases.
 - Never download build inputs without pinning them (a checksum or container digest).

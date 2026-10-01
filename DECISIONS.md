@@ -56,10 +56,10 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-28 decided.
 
 ### DEC-006 In-repo `.deb` packages, no hosted repository
-- **Status:** Decided
+- **Status:** Decided. Its "no hosted repository" part is superseded from 0.2 by DEC-040.
 - **Why:** Packaged config survives upgrades, can use `dpkg-divert` for files owned by other packages, and can be cleanly removed. Hosting a repo is deferred to keep v1 small.
-- **Consequence:** Installed systems don't receive Tekne package updates automatically. Revisit after v0.1.
-- **History:** 2026-09-28 decided.
+- **Consequence:** In 0.1, installed systems don't receive Tekne package updates automatically. From 0.2 they do, through Tekne's own APT repository (DEC-040). Tekne's packages are still built in this repository and baked into the ISO, so installs need no network.
+- **History:** 2026-09-28 decided. 2026-10-01: revisited after v0.1, as planned; the maintainer chose a signed Tekne APT repository for 0.2 (DEC-040).
 
 ### DEC-007 Audience: technical users
 - **Status:** Decided
@@ -197,7 +197,7 @@ When a decision changes, edit the entry in place and add a dated line to its
   - Brave (for `brave-origin*`, DEC-028)
   - XLibre for Devuan (for `xlibre*`/`xserver-xlibre*`, DEC-027)
   - Devuan `excalibur-backports` was expected to be needed for XLibre, but isn't: every Phase 2 build resolved XLibre 25.2 from Excalibur stable alone. It's enabled for the kernel only (DEC-036). It's Devuan's own archive rather than a third party, but it's scoped the same way: a `.sources` entry in `tekne-apt-sources` with `Signed-By` Devuan's key, and a pin limited to the kernel packages.
-- **Why:** Some chosen components aren't in Devuan stable. This doesn't conflict with DEC-006, which is about Tekne hosting its *own* repository.
+- **Why:** Some chosen components aren't in Devuan stable. This doesn't conflict with DEC-006, which is about Tekne hosting its *own* repository. Tekne's own repository (DEC-040, from 0.2) follows these same rules.
 - **History:** 2026-09-28 decided. Same day (Phase 2), added rule 5 after finding that `brave-keyring` installs a globally trusted key, and recorded how the build applies the policy. 2026-09-30: `excalibur-backports` enabled for the kernel (DEC-036).
 
 ### DEC-027 X server: XLibre
@@ -343,3 +343,34 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Why:** removes the download-and-reupload of a 2 GB file by hand; ties every release to a green test run; keeps a human decision before anything is public.
 - **Alternatives:** keep the manual steps; or publish without a draft, which is fully automatic but leaves no review before a release is public.
 - **History:** 2026-10-01 proposed (Phase 6), at the maintainer's request. Same day, decided by the maintainer and implemented as the `release` job and `scripts/ci-release.sh`.
+
+### DEC-040 Tekne APT repository on GitHub Pages
+- **Status:** Decided. Not built yet: SPEC §8, Phases 8–10.
+- **What:** from 0.2, installed systems get Tekne's own packages with `apt update && apt upgrade`, from a signed APT repository at `https://graewolf.github.io/tekne/apt/`. It amends DEC-006, which deferred a hosted repository until after v0.1. Tekne's packages are still built in this repository and baked into the ISO.
+- **Why:** in 0.1, `tekne-*` updates reach an installed system only if its user builds them from this repository (DEC-006). That works for the maintainer only, so fixes to the firewall, pins or session wait until each user rebuilds.
+- **Rules:** the repository is held to DEC-026 as if it were a third party:
+  - `tekne-apt-sources` ships its public key, checked against `keys/SHA256SUMS`.
+  - Its `.sources` entry uses `Signed-By` with that key alone.
+  - An `/etc/apt/preferences.d/` pin limits it to `tekne-*` packages. Everything else from it gets priority -1.
+  - It carries `tekne-apt-sources`, `tekne-branding`, `tekne-config` and `tekne-desktop`. `tekne-installer` belongs only in the live image, and Devuan packages are never mirrored.
+- **Hosting:** GitHub Pages for this repository, next to the releases (DEC-020). The four packages total about 350 KB per release. Installed systems contact GitHub on `apt update`, as they already do for XLibre's repository. The URL is written into every installed system, so moving it later needs a `tekne-apt-sources` update that runs while the old URL still answers.
+- **Suites** (one `main` component each):
+  - `excalibur`: releases. `tekne-apt-sources` points here.
+  - `excalibur-rc`: pre-releases and releases, so a system that follows it also gets finals. A tester switches to it by editing the suite in `/etc/apt/sources.list.d/tekne.sources`.
+  - Dev builds are never published. Dogfooding between candidates still uses `scripts/build.sh --packages-only` (DEC-032).
+- **Signing key:** a dedicated Ed25519 repository key, not anyone's personal key.
+  - The primary key is certify-only. It's kept offline by the maintainer and never on a machine or service that CI can reach.
+  - A signing subkey with a one-year expiry is the only key CI holds. It's a secret of a GitHub Actions environment, `repo-publish`, that needs the maintainer's approval to run. Only the `publish-repo` job uses that environment. This is the same split as DEC-039's write token.
+  - The public key file (primary plus subkeys) and its fingerprint are recorded here once the key exists.
+  - **Rotation:** before the subkey expires, the maintainer adds a new one with the offline primary. A `tekne-apt-sources` update carrying the new public key is published while the old subkey still signs, and the CI secret is swapped after that. The steps go in `docs/building.md`.
+- **Publishing:**
+  - DEC-039's `release` job also attaches the four `.deb`s to the draft release, so they're files that passed CI's tests, and `build-info.txt` records their checksums.
+  - A new `publish-repo` job runs when a person publishes a release (`release: published`). Pushes, tags and drafts never change the repository.
+  - It rebuilds both suites from the published releases' `.deb`s: the newest release for `excalibur`, and the newest release or pre-release for `excalibur-rc`. It refuses any `.deb` whose checksum differs from that release's `build-info.txt`. Then it signs `InRelease` and `Release.gpg` with `apt-ftparchive` and `gpg`, and deploys Pages.
+  - The site is derived entirely from published releases and keeps no state of its own. Older versions stay downloadable as release assets.
+- **Build isolation:** the build hook `0500-tekne-desktop` runs `apt-get update` with `tekne-apt-sources`'s files in place, which would make the Tekne repository active inside the build chroot. The build disables that source, so an ISO only ever contains the packages built from its own commit, and `0510-check-apt-origins` fails the build otherwise.
+- **From 0.1:** a 0.1 system has no Tekne source, so it joins once by installing 0.2's `tekne-apt-sources` `.deb` from the release page. After that, `apt upgrade` brings the rest. CI's upgrade test (SPEC §8, Phase 9) runs this path from the 0.1 ISO until 0.2 is out.
+- **Alternatives:**
+  - Sign `InRelease` locally with the offline key, with CI only uploading. That keeps the key off GitHub entirely, but every release needs a manual signing step.
+  - A domain of the maintainer's own pointed at Pages, so the hosting could move without touching installed systems. Not wanted for now.
+- **History:** 2026-10-01 proposed (SPEC §8) and decided by the maintainer: a CI-held signing subkey behind an approval gate, the `github.io` address, and a pre-release suite.
