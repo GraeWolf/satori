@@ -2,6 +2,53 @@
 
 ## Unreleased
 
+## 0.1 (2026-10-01)
+
+The first release of **Tekne**: a systemd-free desktop respin of Devuan 6
+Excalibur, for technical users on amd64 laptops and desktops.
+
+- **Desktop:** herbstluftwm on XLibre, with polybar, rofi, dunst, picom,
+  PipeWire, NetworkManager (`nmtui`), Brave Origin and Firefox ESR, all in Tokyo
+  Night colours. Keybindings are listed with `Mod+F1`.
+- **Installer:** `sudo tekne-install` installs the live system to a whole disk,
+  on BIOS or UEFI, optionally encrypted with LUKS2, with a RAM-sized swapfile
+  for hibernation.
+- **No systemd:** sysvinit, elogind and eudev; the build fails if any systemd
+  package gets in (SPEC §4).
+- **Kernel 7.1** from Devuan's `excalibur-backports`.
+- **Defaults:** a firewall that drops inbound traffic, no listening services,
+  telemetry off in both browsers.
+- **Built and tested by CI:** every build boots on BIOS and UEFI, and installs
+  on both, with and without LUKS, including hibernate and resume. This release's
+  files come from a green build of its tag.
+
+Read [docs/customizing.md](https://github.com/GraeWolf/tekne/blob/v0.1/docs/customizing.md)
+to change the defaults and
+[docs/building.md](https://github.com/GraeWolf/tekne/blob/v0.1/docs/building.md)
+to build your own ISO.
+
+**Known limitations:**
+- Secure Boot must be off (DEC-016).
+- The installer takes a whole disk: no dual-boot or manual partitioning (DEC-005).
+- Tekne's own `tekne-*` packages update by building them from this repository,
+  not from an APT repository (DEC-006). Devuan's packages update with `apt` as
+  usual.
+- The artwork is a placeholder, and the console login greeting still names
+  Devuan (DEC-035).
+- Real-hardware testing so far is one laptop: an ASUS ROG Zephyrus G15 with
+  AMD and NVIDIA graphics.
+
+**Upgrading:** from 0.1-rc2, build this version's packages and install them
+(`sudo scripts/build.sh --packages-only`, then
+`sudo apt install ./out/packages/tekne-{apt-sources,branding,config,desktop}_*.deb`).
+From 0.1-rc1 (satori), follow the steps under 0.1-rc2.
+
+### Changes since 0.1-rc2
+- Release documentation only; the system is the same as 0.1-rc2, rebuilt from
+  the tag with Devuan's current packages.
+- DEC-032 records how `VERSION` advances after a release candidate, so dev
+  builds always sort above the last candidate.
+
 ## 0.1-rc2 (2026-10-01)
 
 Second release candidate: the distribution is now **Tekne** (formerly
