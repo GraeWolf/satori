@@ -7,7 +7,8 @@ keyboard-driven installer. See [SPEC.md](SPEC.md) for what's planned and
 **Status:** Phases 1–3 and the release candidate gate are complete, and
 `0.1-rc1` is installed on the development laptop. The live ISO boots to the
 herbstluftwm desktop and installs with `sudo tekne-install`. Phase 4
-(branding: Tokyo Night, placeholder art) is complete; Phase 5 (CI) is next.
+(branding: Tokyo Night, placeholder art) and Phase 5 (CI) are complete; Phase 6 (docs and the
+first release) is next.
 
 ## Build
 

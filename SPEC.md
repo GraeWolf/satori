@@ -248,7 +248,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ `os-release` still shows Tekne after `apt install --reinstall base-files`.
 - ✅ No Devuan or Debian logos appear on the boot menu, GRUB, or desktop.
 
-**Phase 5: CI and QA**. In progress: `.github/workflows/build.yml` (DEC-038).
+**Phase 5: CI and QA**. ✔ Complete (2026-10-01). `.github/workflows/build.yml` (DEC-038): the first run on `master` ([36802153183](https://github.com/GraeWolf/tekne/actions/runs/36802153183), `b6b69e3`) built the ISO, passed `live-boot.py` and all four `install.py` cases, and kept the ISO as the `tekne-iso` artifact, in 38 minutes.
 - A CI pipeline builds on push and runs the automated tests. `docs/testing.md` has the manual checklist.
 - ✅ A green CI run on `master` (the default branch) produces downloadable ISO artifacts.
 
