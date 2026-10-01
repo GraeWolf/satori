@@ -2,50 +2,67 @@
 
 ## Unreleased
 
+## 0.1-rc2 (2026-10-01)
+
+Second release candidate: the distribution is now **Tekne** (formerly
+satori), with branding (Phase 4), CI (Phase 5), the 7.1 kernel from
+backports, and a styled boot screen. Every build is tested in CI: live boot
+on BIOS and UEFI, and installs on BIOS and UEFI, with and without LUKS,
+including hibernate and resume.
+
+**Upgrading from 0.1-rc1 (satori):** build this version's packages
+(`sudo scripts/build.sh --packages-only`), then run
+`sudo apt install --purge ./out/packages/tekne-{apt-sources,branding,config,desktop}_*.deb`
+and reboot. It removes the `satori-*` packages cleanly. The LUKS mapping and
+hostname keep their names.
+
 ### Changed
 - **Renamed from satori to Tekne** (DEC-008): packages are now `tekne-*`,
-  and so are paths, commands, the firewall table and the ISO name. To move an
-  installed satori system over, build and run
-  `sudo apt install --purge ./out/packages/tekne-{apt-sources,branding,config,desktop}_*.deb`;
-  it removes the `satori-*` packages cleanly. The placeholder art is now a
-  geometric T instead of an ensō.
+  and so are paths, commands, the firewall table and the ISO name. The
+  placeholder art is now a geometric T instead of an ensō.
+- Kernel 7.1 from Devuan's `excalibur-backports` instead of stable's 6.12
+  (DEC-036). `tekne-apt-sources` adds the suite, pinned to the kernel
+  packages only. Fixes ASUS ROG laptop keyboards that `hid-asus` failed to set
+  up on 6.12 (dead keyboard, even at the LUKS prompt).
+- Firewall (DEC-023): traffic from local container and VM bridges (podman,
+  Docker, libvirt) is accepted, as are ports a container engine publishes.
+  Before, containers and VMs on a bridge network had no network at all.
+- `tekne-config` declares the packages its helper scripts call (herbstluftwm,
+  rofi, maim, xclip and others), instead of relying on `tekne-desktop`.
+- The no-systemd allowlist (DEC-010) is empty: `libsystemd0` is no longer in
+  the image, because Devuan's `libelogind-compat` replaces it.
 
 ### Added
+- Branding (Phase 4, DEC-034): the `tekne-branding` package. `os-release`
+  says Tekne (Devuan's copy is diverted, so `base-files` upgrades can't bring
+  it back); a GRUB theme for the live ISO and installed systems, a wallpaper
+  and a logo. The artwork is a placeholder, rendered from SVGs in `branding/`
+  (CC-BY-SA-4.0).
+- Tokyo Night colours for herbstluftwm, polybar, rofi, dunst, alacritty and the
+  lock screen; dark Adwaita with Papirus icons for GTK apps.
+- A styled boot console (DEC-037): Tokyo Night console colours, firmware
+  error spam kept off the screen (`loglevel=3`), and a centred "T E K N E"
+  banner above a centred LUKS passphrase prompt. New installs name the
+  encrypted disk `tekne`. Still text, no Plymouth (DEC-015).
+- `tekne-terminal`: alacritty with Tekne's config unless you have your own.
+  It's the `x-terminal-emulator` alternative, which had been xterm's `lxterm`.
+- Live ISO boot menu: "Tekne live" and "Tekne live (safe graphics)"
+  (`nomodeset`) replace live-build's "Live system" entries and Debian splash.
+- CI (Phase 5, DEC-038): GitHub Actions builds the ISO and runs the live-boot
+  and install tests on every push to `master` and every pull request, and keeps
+  the ISO as a downloadable artifact.
 - Releases from CI (DEC-039): pushing a `v*` tag builds and tests it, then
   `scripts/ci-release.sh` checks the build and creates a draft GitHub release
   with the ISO, checksum, manifest and build-info.
 - Docs (Phase 6): `docs/customizing.md` (changing an installed system) and
   `docs/building.md` (building, testing, releasing, and where to change
   things); the README links them and says how to try Tekne.
-- CI (Phase 5, DEC-038): GitHub Actions builds the ISO and runs the live-boot
-  and install tests on every push to `master` and every pull request, and keeps
-  the ISO as a downloadable artifact.
-- A styled boot console (DEC-037): Tokyo Night console colours, firmware
-  error spam kept off the screen (`loglevel=3`), and a centred "T E K N E"
-  banner above a centred LUKS passphrase prompt. New installs name the
-  encrypted disk `tekne`. Still text, no Plymouth (DEC-015).
-- Kernel from Devuan's `excalibur-backports` (DEC-036): 7.1 instead of
-  stable's 6.12. `tekne-apt-sources` adds the suite, pinned to the kernel
-  packages only. Fixes ASUS ROG laptop keyboards that `hid-asus` failed to set
-  up on 6.12 (dead keyboard, even at the LUKS prompt).
-- Branding (Phase 4, DEC-034): the `tekne-branding` package. `os-release`
-  says Tekne (Devuan's copy is diverted, so `base-files` upgrades can't bring
-  it back), and ships a GRUB theme for the live ISO and installed systems, a
-  wallpaper and a logo. The artwork is a placeholder mark, rendered from SVGs in
-  `branding/` (CC-BY-SA-4.0).
-- Tokyo Night colours for herbstluftwm, polybar, rofi, dunst, alacritty and the
-  lock screen; dark Adwaita with Papirus icons for GTK apps.
-- `tekne-terminal`: alacritty with Tekne's config unless you have your own.
-  It's the `x-terminal-emulator` alternative, which had been xterm's `lxterm`.
-- Live ISO boot menu: "Tekne live" and "Tekne live (safe graphics)"
-  (`nomodeset`) replace live-build's "Live system" entries and Debian splash.
 - The build container installs `librsvg2-bin`, to render the artwork.
 
 ### Fixed
 - Audio sometimes missing after login: WirePlumber exits if PipeWire isn't
   listening yet, and the session started them together. The autostart now
-  waits (up to 5 s) for PipeWire's socket first. Seen in 1 of 3 UEFI live
-  boots of `0.1-rc2-dev37`.
+  waits (up to 5 s) for PipeWire's socket first.
 - The bar had no battery indicator on laptops whose battery or charger isn't
   named `BAT0`/`ADP1`, polybar's defaults (for example `BAT1` and `ACAD`). The
   herbstluftwm autostart now detects the names from `/sys/class/power_supply`.
@@ -55,16 +72,6 @@
   the host's network.
 - `service tekne-firewall status` said "NOT loaded" when run without root,
   because nft can't read the ruleset then. It now says it needs root.
-
-### Changed
-- Firewall (DEC-023): traffic from local container and VM bridges (podman,
-  Docker, libvirt) is accepted, as are ports a container engine publishes.
-  Before, containers and VMs on a bridge network had no network at all.
-- `tekne-config` now declares the packages its helper scripts call
-  (herbstluftwm, rofi, maim, xclip and others), instead of relying on
-  `tekne-desktop` to install them.
-- The no-systemd allowlist (DEC-010) is empty: `libsystemd0` is no longer in
-  the image, because Devuan's `libelogind-compat` replaces it.
 
 ## 0.1-rc1 (2026-09-29)
 
