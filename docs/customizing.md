@@ -1,0 +1,121 @@
+# Customizing Tekne
+
+Tekne's defaults are meant to be changed. This page lists where each one lives
+and how to replace it. For building your own ISO, see
+[building.md](building.md).
+
+## How defaults work
+
+- **Your config wins.** Tekne's defaults live in `/usr/share/tekne/` and
+  `/etc/`. Each program reads them only when you have no config of your own in
+  `~/.config`. Tekne's packages never write to your home directory.
+- **Copy, then edit.** For most programs, the quickest start is to copy Tekne's
+  file into `~/.config` and change the copy.
+- **Edits to `/etc` survive upgrades.** Files under `/etc` that Tekne ships are
+  conffiles: if a Tekne update changes one you've edited, dpkg asks which
+  version to keep.
+
+## The desktop session
+
+You log in on tty1, which starts X (`startx`), which runs `tekne-session`,
+which starts herbstluftwm with Tekne's autostart. The autostart sets the
+keybindings, colours and window rules, and starts the session programs: audio
+(PipeWire), the bar, notifications, the compositor, the clipboard manager, the
+lock screen and the wallpaper. Details: [desktop-stack.md](desktop-stack.md).
+
+| What | Tekne's default | To change it |
+|---|---|---|
+| Window manager setup, keybindings, startup programs | `/usr/share/tekne/herbstluftwm/autostart` | Copy it to `~/.config/herbstluftwm/autostart` and make it executable. `tekne-session` then runs herbstluftwm with yours instead. Keep the lines that start the session programs, or start them some other way. |
+| Keybinding cheat sheet (`Mod+F1`) | `/usr/share/tekne/keybindings.txt` | It lists Tekne's defaults; it doesn't follow your autostart. |
+| Bar | `/usr/share/tekne/polybar/config.ini` (bar `tekne`), started by the autostart | Copy it to `~/.config/polybar/config.ini`, and in your autostart copy change the `polybar` line to `--config=$HOME/.config/polybar/config.ini`. |
+| Launcher, window switcher, power menu (rofi) | `/etc/rofi.rasi`, which selects `/usr/share/tekne/rofi/tokyonight.rasi` | Create `~/.config/rofi/config.rasi`. rofi reads it after Tekne's file, so you can override single settings, or set your own `@theme`. |
+| Notifications (dunst) | `/etc/xdg/dunst/dunstrc.d/50-tekne.conf`, on top of dunst's own `/etc/xdg/dunst/dunstrc` | Create `~/.config/dunst/dunstrc`. dunst then uses only yours, so start from a copy of `/etc/xdg/dunst/dunstrc`. |
+| Terminal | `tekne-terminal`: alacritty with `/usr/share/tekne/alacritty.toml` | Copy that file to `~/.config/alacritty/alacritty.toml`; `tekne-terminal` uses yours from then on. To use another terminal everywhere, see "Default applications" below. |
+| Compositor | `/usr/share/tekne/picom.conf`, started by the autostart | Change the `picom` line in your autostart copy. |
+| Wallpaper | `/usr/share/backgrounds/tekne/tekne.png`, set with `feh` by the autostart | Change the `feh` line in your autostart copy, e.g. `feh --no-fehbg --bg-fill ~/Pictures/wall.png`. |
+| Lock screen | `xss-lock` runs `i3lock --color=1a1b26` | Change the `xss-lock` line in your autostart copy. |
+| GTK theme, icons, font | Dark Adwaita, Papirus-Dark icons, Noto Sans: `/etc/xdg/gtk-3.0/settings.ini`, `/etc/xdg/gtk-4.0/settings.ini`, and a GSettings default for the dark style | Run `lxappearance`, or write `~/.config/gtk-3.0/settings.ini`. For GTK 4 and libadwaita apps: `sudo apt install libglib2.0-bin`, then `gsettings set org.gnome.desktop.interface color-scheme default`. |
+| Colours | Tokyo Night in all of the above (DEC-034) | Each program's own config; there's no single theme switch. |
+
+### Starting the desktop
+
+- **Plain console on tty1:** create `~/.config/tekne/no-startx`. Logging in on
+  tty1 then gives a shell; run `startx` yourself when you want the desktop.
+- **Your own X session:** a `~/.xsession` or `~/.xinitrc` replaces
+  `tekne-session` entirely.
+
+## Default applications
+
+| What | How to change it |
+|---|---|
+| Web browser (Brave Origin) | `xdg-settings set default-web-browser firefox-esr.desktop`, which writes `~/.config/mimeapps.list`. Programs that call `x-www-browser` use `sudo update-alternatives --config x-www-browser`. |
+| Other file types (PDF, images, text, folders) | Tekne's choices are in `/etc/xdg/mimeapps.list`; entries in `~/.config/mimeapps.list` take precedence. |
+| Terminal (`x-terminal-emulator`) | `sudo update-alternatives --config x-terminal-emulator`. `Mod+Return` runs `tekne-terminal`; change that in your autostart copy. |
+| Email (Melia, not installed) | `sudo tekne-get-melia` downloads it and installs it only if its signature and checksum verify (DEC-029). |
+
+## System settings
+
+### Firewall
+
+`/etc/tekne/nftables.conf`, loaded at boot by the `tekne-firewall` init
+script (DEC-023). Inbound traffic is dropped except replies, loopback, IPv6
+housekeeping, and local container and VM bridges (podman, Docker, libvirt).
+To open a port, add a rule to the `input` chain, for example `tcp dport 22
+accept`, then:
+
+```sh
+sudo service tekne-firewall reload
+sudo service tekne-firewall status
+```
+
+`sudo service tekne-firewall stop` removes it until the next boot.
+
+### Boot screen and console
+
+- **Console colours and messages:** `/etc/default/grub.d/tekne-console.cfg`
+  sets the Tokyo Night console palette and `loglevel=3` (DEC-037). Edit it,
+  then run `sudo update-grub`.
+- **Everything on screen while booting:** remove `quiet` from
+  `GRUB_CMDLINE_LINUX_DEFAULT` in `/etc/default/grub`, then `sudo update-grub`.
+  Without `quiet`, the banner above the LUKS prompt is also skipped.
+- **GRUB theme:** `/etc/default/grub.d/tekne-theme.cfg` selects
+  `/boot/grub/themes/tekne`. Point `GRUB_THEME` elsewhere, or delete the line
+  for GRUB's plain menu, then `sudo update-grub`.
+
+### Swap and hibernation
+
+The installer creates `/swapfile` the size of your RAM and configures resume
+for it (DEC-017). Hibernation depends on the swapfile's position on disk, so
+don't recreate or move it by hand. To resize it:
+
+```sh
+sudo tekne-swap-resize 32    # GiB; at least your RAM, to hibernate reliably
+```
+
+### Kernel
+
+Tekne's kernel comes from Devuan's `excalibur-backports` (DEC-036). The pin is
+`/etc/apt/preferences.d/tekne-backports.pref`. To go back to the stable
+kernel, delete that pin, then:
+
+```sh
+sudo apt install linux-image-amd64/excalibur
+```
+
+Keep the backports kernel installed until the stable one has booted
+successfully; GRUB lists both under "Advanced options".
+
+### APT repositories
+
+Besides Devuan's, Tekne enables Brave's and XLibre's repositories and
+`excalibur-backports`, each pinned to the few packages Tekne takes from it
+(DEC-026). The files are `/etc/apt/sources.list.d/tekne-*.sources`,
+`/etc/apt/sources.list.d/brave-browser-release.sources` and
+`/etc/apt/preferences.d/tekne-*.pref`. To install another package from
+backports, name the suite: `sudo apt install foo/excalibur-backports`.
+
+### Updating Tekne
+
+Devuan's packages update with `apt` as usual. Tekne's own `tekne-*` packages
+come from a build of this repository, not from a repository (DEC-006): see
+"Update an installed Tekne" in the [README](../README.md).

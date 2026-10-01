@@ -11,6 +11,9 @@
   geometric T instead of an ensō.
 
 ### Added
+- Docs (Phase 6): `docs/customizing.md` (changing an installed system) and
+  `docs/building.md` (building, testing, releasing, and where to change
+  things); the README links them and says how to try Tekne.
 - CI (Phase 5, DEC-038): GitHub Actions builds the ISO and runs the live-boot
   and install tests on every push to `master` and every pull request, and keeps
   the ISO as a downloadable artifact.
