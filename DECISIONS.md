@@ -318,8 +318,8 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **History:** 2026-09-30 decided: the maintainer chose styled text over Plymouth.
 
 ### DEC-038 CI: GitHub Actions on a hosted runner
-- **Status:** Proposed
-- **What:** `.github/workflows/build.yml` runs on pushes to `master`, version tags, pull requests and manual dispatch. One job on GitHub's `ubuntu-24.04` runner (4 CPUs, 16 GB, KVM):
+- **Status:** Decided
+- **What:** `.github/workflows/build.yml` runs on pushes to `master`, version tags, pull requests and manual dispatch. Commits that only change Markdown or the license texts are skipped (`paths-ignore`); GitHub never applies path filters to tag pushes, so release tags always build. One job on GitHub's `ubuntu-24.04` runner (4 CPUs, 16 GB, KVM):
   1. Frees disk space (the build peaks around 15 GB) and enables KVM with GitHub's documented udev rule.
   2. Builds with `sudo CONTAINER_ENGINE=docker scripts/build.sh`, the same command as a local build, so CI uses the pinned build container and its checks (no-systemd, APT origins, kernel, os-release).
   3. Runs `tests/smoke/live-boot.py` and `tests/smoke/install.py` (all four cases, with hibernate/resume).
@@ -327,4 +327,4 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Why:** GitHub already hosts the repository and the releases (DEC-020); the repository is public, so hosted runners and artifact storage cost nothing. Running the same scripts as a local build keeps one way to build and test.
 - **Pinning:** actions are pinned by commit (`actions/checkout` v7.0.1, `actions/upload-artifact` v7.0.1), per the rule that every external build input is pinned. The runner image itself isn't pinnable; the build happens inside the digest-pinned container, so it only supplies Docker, QEMU and OVMF.
 - **Not covered:** `tests/smoke/upgrade.py` (it needs an install kept from an earlier build), and real hardware (docs/testing.md).
-- **History:** 2026-09-30 proposed (Phase 5).
+- **History:** 2026-09-30 proposed (Phase 5). 2026-10-01: the first run on `master` was green (run 36802153183); the maintainer confirmed the design and asked for docs-only commits to skip the build.
