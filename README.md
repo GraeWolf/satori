@@ -5,11 +5,11 @@ keyboard-driven installer. See [SPEC.md](SPEC.md) for what's planned and
 [DECISIONS.md](DECISIONS.md) for why. Licensed GPL-3.0-or-later; the artwork
 in `branding/` is CC-BY-SA-4.0.
 
-**Status:** working towards 0.1. Phases 1–5 are complete: the live ISO boots
-to the herbstluftwm desktop on BIOS and UEFI, installs with `sudo
-tekne-install` (optionally with LUKS, with hibernation), and CI builds and
-tests every change. The development laptop runs Tekne. Phase 6 (docs and the
-first release) is in progress.
+**Status:** [Tekne 0.1](https://github.com/GraeWolf/tekne/releases/tag/v0.1)
+is released: download the ISO, its checksum and build-info from the release
+page. The live ISO boots to the herbstluftwm desktop on BIOS and UEFI,
+installs with `sudo tekne-install` (optionally with LUKS, with hibernation),
+and CI builds and tests every change. All six phases in SPEC.md are complete.
 
 | Guide | For |
 |---|---|

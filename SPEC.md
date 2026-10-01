@@ -253,7 +253,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 - A CI pipeline builds on push and runs the automated tests. `docs/testing.md` has the manual checklist.
 - ✅ A green CI run on `master` (the default branch) produces downloadable ISO artifacts.
 
-**Phase 6: Docs and first release**. In progress: `docs/building.md`, `docs/customizing.md`, the README and the CHANGELOG are written; CI creates draft releases from tested tags (DEC-039). The release path was proven with the [`v0.1-rc2` pre-release](https://github.com/GraeWolf/tekne/releases/tag/v0.1-rc2) (2026-10-01): its ISO, checksum, manifest and build-info come from a green tag build of `b9af90f`. The `v0.1` release is next.
+**Phase 6: Docs and first release**. ✔ Complete (2026-10-01). `docs/building.md`, `docs/customizing.md`, the README and the CHANGELOG are written. [Tekne 0.1](https://github.com/GraeWolf/tekne/releases/tag/v0.1) is released with its ISO, checksum, manifest and build-info, created by CI from a green build of the `v0.1` tag (`f302523`, DEC-039) after the [`v0.1-rc2` pre-release](https://github.com/GraeWolf/tekne/releases/tag/v0.1-rc2) passed a live-USB check on the development laptop.
 - `docs/building.md`, `docs/customizing.md`, README, and CHANGELOG.
 - ✅ The `v0.1` tag is released with its ISO, checksum, manifest, and build-info.
 
