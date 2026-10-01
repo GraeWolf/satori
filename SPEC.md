@@ -147,7 +147,7 @@ reproducibility is a possible later goal.
 ### 5.4 Versioning and release
 - Versions follow `<major>.<minor>`, with the Devuan base in the release notes, for example "Tekne 0.1 (Excalibur)".
 - Git tags `v0.1` etc. Release artifacts are the ISO, its checksum, the manifest, and build-info.
-- `VERSION` holds the next release (`0.1`, `0.1-rc1`, ...). A clean checkout of tag `v<VERSION>` builds as that version. Anything else builds as `<VERSION>-dev<commit count>.<short commit>`. Tekne's `.deb`s get the Debian form of the same version, which always increases (DEC-032). After tagging a release, bump `VERSION` to the next one.
+- `VERSION` holds the next release (`0.1`, `0.1-rc1`, ...). A clean checkout of tag `v<VERSION>` builds as that version. Anything else builds as `<VERSION>-dev<commit count>.<short commit>`. Tekne's `.deb`s get the Debian form of the same version, which always increases (DEC-032). After tagging a release, bump `VERSION` to the next one: after a release candidate, the next candidate, because `0.1~dev…` sorts below `0.1~rc2` (DEC-032).
 - Releases are published on GitHub Releases (DEC-020). Each asset must be under 2 GiB, so the ISO size is tracked in build-info from Phase 2 on.
 - `CHANGELOG.md` is maintained from Phase 1 onward.
 

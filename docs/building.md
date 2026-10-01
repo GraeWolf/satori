@@ -156,8 +156,12 @@ tested tag (DEC-039).
    release with the ISO, `.sha256`, `.packages` and `build-info.txt`, and the
    CHANGELOG section as notes. Tags with a `-` are marked as pre-releases.
 4. Review the draft on GitHub and press "Publish".
-5. Set `VERSION` to the next version (e.g. `0.2-rc1`) and commit, so later dev
-   builds sort above the release.
+5. Set `VERSION` to the next version and commit, so later dev builds sort above
+   the release: after a release candidate, the next candidate (`0.1-rc2` →
+   `0.1-rc3`); after a final release, the next series (`0.1` → `0.2-rc1`).
+   Never the final version straight after a candidate: `0.1~dev…` sorts below
+   `0.1~rc2`, so systems installed from the candidate couldn't upgrade. The
+   final version goes into `VERSION` only in the release commit (DEC-032).
 
 If a check fails, nothing is released; the job log says which check. To try
 the checks on a local build: `DRY_RUN=1 scripts/ci-release.sh v0.1 out`.

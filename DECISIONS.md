@@ -263,8 +263,9 @@ When a decision changes, edit the entry in place and add a dated line to its
   - A clean checkout of tag `v<VERSION>` gets `VERSION` itself, with `-` turned into `~` (`0.1-rc1` becomes `0.1~rc1`, which Debian sorts before `0.1`).
   - Any other build gets `<that>~dev<commit count>.g<short commit>`, e.g. `0.1~rc1~dev131.gb996478`. The commit count rises on every commit, so later builds sort higher, and every dev build sorts before the release it leads to.
   - After tagging a release, bump `VERSION` to the next one (e.g. `0.1-rc2`), so later dev builds sort above the tag.
+  - After a release candidate, the next one is the next *candidate* (`0.1-rc2` → `0.1-rc3`), never the final version: Debian compares the parts after `~` alphabetically, so `0.1~dev60` sorts *below* `0.1~rc2`, and a system installed from rc2 couldn't upgrade to it. The final version (`0.1`) goes into `VERSION` only in the release commit itself, which is tagged at once. After a final release, the next one is the next series' first candidate (`0.2-rc1`).
   - Dirty-tree builds get the same version as their commit; `build-info.txt` records `git_dirty`.
-- **History:** 2026-09-29 proposed (release candidate gate). Same day, confirmed by the maintainer after it carried the first update of the installed laptop from `0.1~rc1` to `0.1~rc2~dev22`.
+- **History:** 2026-09-29 proposed (release candidate gate). Same day, confirmed by the maintainer after it carried the first update of the installed laptop from `0.1~rc1` to `0.1~rc2~dev22`. 2026-10-01: added the rule for the version after a release candidate, after `VERSION=0.1` following `v0.1-rc2` turned out to sort dev builds below rc2 (caught before it was pushed).
 
 ### DEC-033 Developer tools: documented install, not in the ISO
 - **Status:** Decided
