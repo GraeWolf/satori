@@ -40,7 +40,10 @@ The build fails if the package manifest breaks the no-systemd rule
 
 ## Test
 
-Needs `qemu-system-x86` and `ovmf` on the host.
+Needs `qemu-system-x86` and `ovmf` on the host. CI (GitHub Actions,
+`.github/workflows/build.yml`) builds the ISO and runs `live-boot.py` and
+`install.py` on every push to `master` and every pull request; each green run
+keeps the ISO as a downloadable artifact for 30 days (DEC-038).
 
 ```sh
 tests/smoke/live-boot.py                  # live ISO on SeaBIOS and OVMF: sysvinit, desktop, firewall

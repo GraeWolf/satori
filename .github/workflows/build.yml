@@ -1,0 +1,97 @@
+# Tekne CI (SPEC.md §7 Phase 5, DEC-038): build the ISO in the pinned build
+# container, run the QEMU smoke tests, and keep the ISO as a downloadable
+# artifact. The same commands a developer runs locally (README.md).
+name: build
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch or PR supersedes a running build.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    # GitHub's standard Linux runners have KVM, so the QEMU tests run at
+    # full speed; 4 CPUs, 16 GB RAM.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      # The build peaks at roughly 15 GB (chroot, squashfs, ISO, package
+      # cache); the runner's preinstalled toolchains are removed to make room.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/.ghcup /opt/hostedtoolcache /usr/local/share/boost
+          sudo docker image prune --all --force
+          df -h /
+
+      # Actions are pinned by commit (CLAUDE.md: pin every external input).
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # scripts/build.sh derives the version from the commit count and
+          # tags (DEC-032), so it needs the full history.
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Install QEMU and OVMF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
+
+      # The runner's /dev/kvm is root-only until a udev rule opens it up
+      # (GitHub's documented way to use KVM on hosted runners).
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Build the ISO
+        run: sudo CONTAINER_ENGINE=docker scripts/build.sh
+
+      - name: Live boot test (BIOS and UEFI)
+        run: tests/smoke/live-boot.py
+
+      - name: Install test ({BIOS, UEFI} x {plain, LUKS}, with hibernate/resume)
+        run: tests/smoke/install.py
+
+      - name: Upload the ISO
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tekne-iso
+          path: |
+            out/tekne-*-amd64.iso
+            out/tekne-*-amd64.iso.sha256
+            out/tekne-*-amd64.packages
+            out/build-info.txt
+          if-no-files-found: error
+          # The ISO is already compressed (squashfs).
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: logs
+          path: |
+            out/build.log
+            out/build-info.txt
+            out/serial-*.log
+            out/install-test/**/serial-*.log
+          if-no-files-found: ignore
+          retention-days: 30

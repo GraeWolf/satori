@@ -11,6 +11,9 @@
   geometric T instead of an ensō.
 
 ### Added
+- CI (Phase 5, DEC-038): GitHub Actions builds the ISO and runs the live-boot
+  and install tests on every push to `master` and every pull request, and keeps
+  the ISO as a downloadable artifact.
 - A styled boot console (DEC-037): Tokyo Night console colours, firmware
   error spam kept off the screen (`loglevel=3`), and a centred "T E K N E"
   banner above a centred LUKS passphrase prompt. New installs name the

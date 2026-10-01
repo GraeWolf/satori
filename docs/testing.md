@@ -2,8 +2,9 @@
 
 Automated tests run in QEMU and never touch the host's disks (see README):
 `tests/smoke/live-boot.py`, `tests/smoke/install.py`, `tests/smoke/upgrade.py`.
-This file is the manual checklist for what they can't cover: real hardware
-(SPEC §5.2).
+CI (`.github/workflows/build.yml`, DEC-038) runs the first two on every push
+and pull request. This file is the manual checklist for what they can't cover:
+real hardware (SPEC §5.2).
 
 ## Live-USB hardware check
 

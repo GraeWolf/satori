@@ -248,9 +248,9 @@ Each phase is one or more small commits and ends only when every one of its crit
 - ✅ `os-release` still shows Tekne after `apt install --reinstall base-files`.
 - ✅ No Devuan or Debian logos appear on the boot menu, GRUB, or desktop.
 
-**Phase 5: CI and QA**
+**Phase 5: CI and QA**. In progress: `.github/workflows/build.yml` (DEC-038).
 - A CI pipeline builds on push and runs the automated tests. `docs/testing.md` has the manual checklist.
-- ✅ A green CI run on `main` produces downloadable ISO artifacts.
+- ✅ A green CI run on `master` (the default branch) produces downloadable ISO artifacts.
 
 **Phase 6: Docs and first release**
 - `docs/building.md`, `docs/customizing.md`, README, and CHANGELOG.
