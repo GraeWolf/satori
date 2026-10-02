@@ -313,7 +313,7 @@ Phase numbers continue from §7.
 - DEC-040 for the repository (hosting, suites, key custody, publishing). DEC-006 gets a History line pointing to it, and §1, §3.1 and §3.3 change to match. Done 2026-10-01.
 - (maintainer) Generate the key. Then create the `repo-publish` environment with the maintainer as required reviewer, store the signing subkey as its secret, and set Pages to deploy from GitHub Actions.
 - ✅ The maintainer has marked the repository decision Decided, and Q1 to Q4 are answered. Passed 2026-10-01 (DEC-040, §8.5).
-- ✅ The repository key exists. Its public half is in `packages/tekne-apt-sources/keys/` with a line in `SHA256SUMS`, and its fingerprint is in DECISIONS.md. The primary private key isn't on any machine or service CI can reach.
+- ✅ The repository key exists. Its public half is in `packages/tekne-apt-sources/keys/` with a line in `SHA256SUMS`, and its fingerprint is in DECISIONS.md. The primary private key isn't on any machine or service CI can reach. Passed 2026-10-02: `tekne.gpg`, primary `2401BB77…D11D7B37` (DEC-040). Only the signing subkey goes to CI.
 
 **Phase 8: Building and publishing the repository.**
 - A script builds a signed repository from a directory of `.deb`s with a given key. `tekne-apt-sources` ships the source, key and pin. The `release` job attaches the `.deb`s, and the `publish-repo` job publishes them.

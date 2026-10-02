@@ -361,7 +361,10 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Signing key:** a dedicated Ed25519 repository key, not anyone's personal key.
   - The primary key is certify-only. It's kept offline by the maintainer and never on a machine or service that CI can reach.
   - A signing subkey with a one-year expiry is the only key CI holds. It's a secret of a GitHub Actions environment, `repo-publish`, that needs the maintainer's approval to run. Only the `publish-repo` job uses that environment. This is the same split as DEC-039's write token.
-  - The public key file (primary plus subkeys) and its fingerprint are recorded here once the key exists.
+  - **The key** (created 2026-10-02): `packages/tekne-apt-sources/keys/tekne.gpg`, with its checksum in `keys/SHA256SUMS`.
+    - Primary: `2401BB7742E09C29AA41B29441BEF97FD11D7B37` (Ed25519, certify only, no expiry).
+    - Signing subkey: `0565CDB56C65979D951C3E5608DEE513068CADDB` (Ed25519, expires 2027-10-02, so it must be rotated before then).
+    - The primary key's passphrase-protected backup and its revocation certificate are on the development laptop's encrypted disk. Whether they move to offline storage is still open (asked 2026-10-02).
   - **Rotation:** before the subkey expires, the maintainer adds a new one with the offline primary. A `tekne-apt-sources` update carrying the new public key is published while the old subkey still signs, and the CI secret is swapped after that. The steps go in `docs/building.md`.
 - **Publishing:**
   - DEC-039's `release` job also attaches the four `.deb`s to the draft release, so they're files that passed CI's tests, and `build-info.txt` records their checksums.
@@ -373,4 +376,4 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Alternatives:**
   - Sign `InRelease` locally with the offline key, with CI only uploading. That keeps the key off GitHub entirely, but every release needs a manual signing step.
   - A domain of the maintainer's own pointed at Pages, so the hosting could move without touching installed systems. Not wanted for now.
-- **History:** 2026-10-01 proposed (SPEC §8) and decided by the maintainer: a CI-held signing subkey behind an approval gate, the `github.io` address, and a pre-release suite.
+- **History:** 2026-10-01 proposed (SPEC §8) and decided by the maintainer: a CI-held signing subkey behind an approval gate, the `github.io` address, and a pre-release suite. 2026-10-02: the maintainer created the key; its fingerprints are recorded above.
