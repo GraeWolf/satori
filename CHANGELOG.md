@@ -2,10 +2,30 @@
 
 ## Unreleased
 
-**Upgrading from 0.1:** once, install this release's `tekne-apt-sources`
-from the release page (`sudo apt install ./tekne-apt-sources_*_all.deb`).
-After that, `sudo apt update && sudo apt upgrade` updates Tekne's packages
-along with Devuan's (DEC-040).
+## 0.2-rc1 (2026-10-02)
+
+First release candidate of Tekne 0.2, which makes an installed Tekne
+updatable with apt alone. Tekne's own packages now come from Tekne's signed
+APT repository (DEC-040), so `sudo apt update && sudo apt upgrade` updates
+them along with Devuan's. The desktop and installer are the same as 0.1.
+
+The repository is signed with a key whose primary half is kept offline:
+primary `2401BB7742E09C29AA41B29441BEF97FD11D7B37`, signing subkey
+`82C321645DE72C0575A968AC64CE1E0BA73FF9F4`. It's published only from
+releases that passed CI and that the maintainer published and approved.
+
+**Testing this candidate on a 0.1 system:**
+1. Download this release's `tekne-apt-sources` `.deb` (GitHub may show a `.`
+   where the version has a `~`) and install it:
+   `sudo apt install ./tekne-apt-sources_*_all.deb`
+2. In `/etc/apt/sources.list.d/tekne.sources`, change `Suites: excalibur` to
+   `Suites: excalibur-rc`. Release candidates are published only there;
+   `excalibur` stays empty until 0.2 is released.
+3. `sudo apt update && sudo apt upgrade`. Later candidates arrive the same way.
+
+**Installing from this ISO:** the installed system follows `excalibur`, so
+it gets Tekne updates from 0.2 on. Switch it to `excalibur-rc` (step 2 above)
+to receive further candidates.
 
 ### Added
 - Tekne's own APT repository (DEC-040), so installed systems get `tekne-*`
