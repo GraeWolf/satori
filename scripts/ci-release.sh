@@ -2,7 +2,8 @@
 # Create a draft GitHub release from a tested tag build (DEC-039). Run by the
 # release job in .github/workflows/build.yml, after build-and-test passed:
 #   scripts/ci-release.sh TAG DIR
-# DIR holds the tekne-iso artifact (ISO, .sha256, .packages, build-info.txt).
+# DIR holds the tekne-iso artifact (ISO, .sha256, .packages, build-info.txt,
+# and packages/ with Tekne's .debs).
 # With DRY_RUN=1 it checks everything and prints the gh command instead.
 # Needs GH_TOKEN (contents: write) and gh, which GitHub's runners have.
 set -eu
@@ -27,7 +28,19 @@ field() { sed -n "s/^$1: //p" "${INFO}"; }
 [ "$(field git_dirty)" = no ] || die "build-info.txt says the tree was dirty"
 
 # 2. Every file is there, under the size limit, and the checksum verifies.
+#    The .debs are the ones installed systems get from Tekne's APT repository
+#    once the release is published (DEC-040); tekne-installer belongs only in
+#    the live image. Each must match the checksum the build recorded.
 FILES="${DIR}/${NAME}.iso ${DIR}/${NAME}.iso.sha256 ${DIR}/${NAME}.packages ${INFO}"
+PKG_VERSION="$(field package_version)"
+for p in tekne-apt-sources tekne-branding tekne-config tekne-desktop; do
+	deb="${DIR}/packages/${p}_${PKG_VERSION}_all.deb"
+	[ -f "${deb}" ] || die "${deb} missing"
+	want="$(field deb | awk -v f="$(basename "${deb}")" '$1 == f { print $2 }')"
+	[ -n "${want}" ] || die "build-info.txt has no checksum for $(basename "${deb}")"
+	[ "$(sha256sum < "${deb}" | cut -d' ' -f1)" = "${want}" ] || die "$(basename "${deb}") doesn't match build-info.txt"
+	FILES="${FILES} ${deb}"
+done
 for f in ${FILES}; do
 	[ -f "${f}" ] || die "${f} missing"
 	size="$(stat -c %s "${f}")"

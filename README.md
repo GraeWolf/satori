@@ -58,12 +58,13 @@ The build fails if the package manifest breaks the no-systemd rule
 ## Test
 
 Needs `qemu-system-x86` and `ovmf` on the host. CI (GitHub Actions,
-`.github/workflows/build.yml`) builds the ISO and runs `live-boot.py` and
-`install.py` on every push to `master` and every pull request; each green run
-keeps the ISO as a downloadable artifact for 30 days (DEC-038).
+`.github/workflows/build.yml`) builds the ISO and runs `live-boot.py`,
+`repo.py` and `install.py` on every push to `master` and every pull request;
+each green run keeps the ISO as a downloadable artifact for 30 days (DEC-038).
 
 ```sh
 tests/smoke/live-boot.py                  # live ISO on SeaBIOS and OVMF: sysvinit, desktop, firewall
+tests/smoke/repo.py                       # Tekne's APT repository: key, pin, tampered .deb
 tests/smoke/install.py                    # unattended installs {BIOS,UEFI} x {plain,LUKS}, each
                                           # booted, checked, hibernated and resumed (~15 min)
 scripts/test-in-qemu.sh uefi              # the newest ISO in a QEMU window

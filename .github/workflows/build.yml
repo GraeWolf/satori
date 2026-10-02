@@ -77,6 +77,11 @@ jobs:
       - name: Live boot test (BIOS and UEFI)
         run: tests/smoke/live-boot.py
 
+      # DEC-040: apt accepts the build's test repository only with the right
+      # key, refuses a tampered .deb, and pins away anything but tekne-*.
+      - name: Repository test (key, pin, tampered package)
+        run: tests/smoke/repo.py
+
       - name: Install test ({BIOS, UEFI} x {plain, LUKS}, with hibernate/resume)
         run: tests/smoke/install.py
 
@@ -89,6 +94,7 @@ jobs:
             out/tekne-*-amd64.iso.sha256
             out/tekne-*-amd64.packages
             out/build-info.txt
+            out/packages/tekne-*.deb
           if-no-files-found: error
           # The ISO is already compressed (squashfs).
           compression-level: 0

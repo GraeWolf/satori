@@ -323,12 +323,12 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **What:** `.github/workflows/build.yml` runs on pushes to `master`, version tags, pull requests and manual dispatch. Commits that only change Markdown or the license texts are skipped (`paths-ignore`); GitHub never applies path filters to tag pushes, so release tags always build. One job on GitHub's `ubuntu-24.04` runner (4 CPUs, 16 GB, KVM):
   1. Frees disk space (the build peaks around 15 GB) and enables KVM with GitHub's documented udev rule.
   2. Builds with `sudo CONTAINER_ENGINE=docker scripts/build.sh`, the same command as a local build, so CI uses the pinned build container and its checks (no-systemd, APT origins, kernel, os-release).
-  3. Runs `tests/smoke/live-boot.py` and `tests/smoke/install.py` (all four cases, with hibernate/resume).
-  4. Uploads the ISO, its checksum, the package manifest and `build-info.txt` as the `tekne-iso` artifact for 30 days; on failure, the build and serial logs instead.
+  3. Runs `tests/smoke/live-boot.py`, `tests/smoke/repo.py` (DEC-040) and `tests/smoke/install.py` (all four cases, with hibernate/resume).
+  4. Uploads the ISO, its checksum, the package manifest, `build-info.txt` and Tekne's `.deb`s as the `tekne-iso` artifact for 30 days; on failure, the build and serial logs instead.
 - **Why:** GitHub already hosts the repository and the releases (DEC-020); the repository is public, so hosted runners and artifact storage cost nothing. Running the same scripts as a local build keeps one way to build and test.
 - **Pinning:** actions are pinned by commit (`actions/checkout` v7.0.1, `actions/upload-artifact` v7.0.1), per the rule that every external build input is pinned. The runner image itself isn't pinnable; the build happens inside the digest-pinned container, so it only supplies Docker, QEMU and OVMF.
 - **Not covered:** `tests/smoke/upgrade.py` (it needs an install kept from an earlier build), and real hardware (docs/testing.md).
-- **History:** 2026-09-30 proposed (Phase 5). 2026-10-01: the first run on `master` was green (run 36802153183); the maintainer confirmed the design and asked for docs-only commits to skip the build.
+- **History:** 2026-09-30 proposed (Phase 5). 2026-10-01: the first run on `master` was green (run 36802153183); the maintainer confirmed the design and asked for docs-only commits to skip the build. 2026-10-02: added `repo.py`, and the `.deb`s to the artifact, for DEC-040.
 
 ### DEC-039 Releases created by CI from a tested tag
 - **Status:** Decided
@@ -338,20 +338,20 @@ When a decision changes, edit the entry in place and add a dated line to its
   - Only this job gets `permissions: contents: write`. The build job stays read-only, so the 30-minute build with root never holds a token that can write to the repository.
   - It downloads the `tekne-iso` artifact with `actions/download-artifact`, pinned by commit (v8.0.1, `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c`), and creates the release with the runner's `gh`, using the job's own token.
   - **Checks before uploading:** `build-info.txt` must show the tag's version (e.g. `0.1` for `v0.1`) and `git_dirty: no`, which proves it was a clean build of the tag; the ISO's `.sha256` must verify; every file must be under GitHub's 2 GiB limit (DEC-020); and CHANGELOG.md must have a section for the version, which becomes the release notes. Any failure stops the release.
-  - **Files:** the ISO, its `.sha256`, the package manifest and `build-info.txt`.
+  - **Files:** the ISO, its `.sha256`, the package manifest, `build-info.txt`, and Tekne's `.deb`s apart from `tekne-installer` (DEC-040), each checked against the SHA-256 that `build-info.txt` records for it.
   - **Draft first:** the release is created as a draft, so a person reads it and presses "Publish". Tags with a `-` (e.g. `v0.1-rc2`) are marked as pre-releases.
 - **Why:** removes the download-and-reupload of a 2 GB file by hand; ties every release to a green test run; keeps a human decision before anything is public.
 - **Alternatives:** keep the manual steps; or publish without a draft, which is fully automatic but leaves no review before a release is public.
-- **History:** 2026-10-01 proposed (Phase 6), at the maintainer's request. Same day, decided by the maintainer and implemented as the `release` job and `scripts/ci-release.sh`.
+- **History:** 2026-10-01 proposed (Phase 6), at the maintainer's request. Same day, decided by the maintainer and implemented as the `release` job and `scripts/ci-release.sh`. 2026-10-02: releases also carry the `.deb`s that Tekne's APT repository is built from (DEC-040).
 
 ### DEC-040 Tekne APT repository on GitHub Pages
-- **Status:** Decided. Not built yet: SPEC §8, Phases 8–10.
+- **Status:** Decided. Built in Phase 8 (SPEC §8); first published with 0.2-rc1.
 - **What:** from 0.2, installed systems get Tekne's own packages with `apt update && apt upgrade`, from a signed APT repository at `https://graewolf.github.io/tekne/apt/`. It amends DEC-006, which deferred a hosted repository until after v0.1. Tekne's packages are still built in this repository and baked into the ISO.
 - **Why:** in 0.1, `tekne-*` updates reach an installed system only if its user builds them from this repository (DEC-006). That works for the maintainer only, so fixes to the firewall, pins or session wait until each user rebuilds.
 - **Rules:** the repository is held to DEC-026 as if it were a third party:
   - `tekne-apt-sources` ships its public key, checked against `keys/SHA256SUMS`.
   - Its `.sources` entry uses `Signed-By` with that key alone.
-  - An `/etc/apt/preferences.d/` pin limits it to `tekne-*` packages. Everything else from it gets priority -1.
+  - An `/etc/apt/preferences.d/` pin, `tekne.pref`, limits it to `tekne-*` packages. Everything else from it gets priority -1. The pin matches the repository's signed `Origin: Tekne` (`o=Tekne`) rather than its host name, so the tests can serve the repository from anywhere and still exercise the shipped pin.
   - It carries `tekne-apt-sources`, `tekne-branding`, `tekne-config` and `tekne-desktop`. `tekne-installer` belongs only in the live image, and Devuan packages are never mirrored.
 - **Hosting:** GitHub Pages for this repository, next to the releases (DEC-020). The four packages total about 350 KB per release. Installed systems contact GitHub on `apt update`, as they already do for XLibre's repository. The URL is written into every installed system, so moving it later needs a `tekne-apt-sources` update that runs while the old URL still answers.
 - **Suites** (one `main` component each):
@@ -360,7 +360,7 @@ When a decision changes, edit the entry in place and add a dated line to its
   - Dev builds are never published. Dogfooding between candidates still uses `scripts/build.sh --packages-only` (DEC-032).
 - **Signing key:** a dedicated Ed25519 repository key, not anyone's personal key.
   - The primary key is certify-only. It's kept offline by the maintainer and never on a machine or service that CI can reach.
-  - A signing subkey with a one-year expiry is the only key CI holds. It's a secret of a GitHub Actions environment, `repo-publish`, that needs the maintainer's approval to run. Only the `publish-repo` job uses that environment. This is the same split as DEC-039's write token.
+  - A signing subkey with a one-year expiry is the only key CI holds. It's a secret of a GitHub Actions environment, `repo-publish`, that needs the maintainer's approval to run. Only the `sign` job of `.github/workflows/publish-repo.yml` uses that environment. This is the same split as DEC-039's write token.
   - **The key** (created 2026-10-02): `packages/tekne-apt-sources/keys/tekne.gpg`, with its checksum in `keys/SHA256SUMS`.
     - Primary: `2401BB7742E09C29AA41B29441BEF97FD11D7B37` (Ed25519, certify only, no expiry).
     - Signing subkey: `82C321645DE72C0575A968AC64CE1E0BA73FF9F4` (Ed25519, expires 2027-10-02, so it must be rotated before then).
@@ -369,12 +369,17 @@ When a decision changes, edit the entry in place and add a dated line to its
   - **Rotation:** before the subkey expires, the maintainer adds a new one with the offline primary. A `tekne-apt-sources` update carrying the new public key is published while the old subkey still signs, and the CI secret is swapped after that. The steps go in `docs/building.md`.
 - **Publishing:**
   - DEC-039's `release` job also attaches the four `.deb`s to the draft release, so they're files that passed CI's tests, and `build-info.txt` records their checksums.
-  - A new `publish-repo` job runs when a person publishes a release (`release: published`). Pushes, tags and drafts never change the repository.
-  - It rebuilds both suites from the published releases' `.deb`s: the newest release for `excalibur`, and the newest release or pre-release for `excalibur-rc`. It refuses any `.deb` whose checksum differs from that release's `build-info.txt`. Then it signs `InRelease` and `Release.gpg` with `apt-ftparchive` and `gpg`, and deploys Pages.
+  - `.github/workflows/publish-repo.yml` runs when a person publishes a release (`release: published`), or by hand (for example after a key rotation). Pushes, tags and drafts never change the repository.
+  - Its `sign` job (`scripts/ci-publish-repo.sh`) rebuilds both suites from the published releases' `.deb`s: the newest release for `excalibur`, and the newest release or pre-release for `excalibur-rc`, both by Debian version order. Releases without `.deb`s (from before 0.2) are skipped, and a suite with no release is published empty. It refuses any `.deb` whose checksum or version differs from that release's `build-info.txt`, or a build-info from a dirty tree.
+  - It builds and signs the repository in the build container with `scripts/build-repo.sh` (`apt-ftparchive`, `gpg`), the same script and tools that make every build's test repository. The signatures must verify against `keys/tekne.gpg`, or nothing is published, so a wrong CI secret can't reach users.
+  - A separate `deploy` job deploys GitHub Pages: `actions/deploy-pages` needs GitHub's own `github-pages` environment, and a job has only one environment. That job never sees the key.
   - The site is derived entirely from published releases and keeps no state of its own. Older versions stay downloadable as release assets.
-- **Build isolation:** the build hook `0500-tekne-desktop` runs `apt-get update` with `tekne-apt-sources`'s files in place, which would make the Tekne repository active inside the build chroot. The build disables that source, so an ISO only ever contains the packages built from its own commit, and `0510-check-apt-origins` fails the build otherwise.
+- **Build isolation:** the build hook `0500-tekne-desktop` runs `apt-get update` with `tekne-apt-sources`'s files in place, and live-build runs it again after all hooks (`chroot_archives remove`), so a hook can't simply disable the source. Without isolation, a build would also fail outright while the repository doesn't exist yet (a 404 is an apt error).
+  - `live-build/config/apt/apt.conf` sends the repository's host through a proxy that isn't there. live-build installs that file for every chroot stage and removes it before the image is made. apt-get update then warns "Failed to fetch" and carries on, since a network failure is only a warning.
+  - `0510-check-apt-origins` fails the build if any index came from the Tekne repository, or if the `tekne-*` packages don't all have one version. `scripts/build-in-container.sh` checks the image's indexes after `lb build` too.
+- **Tests:** every full build also writes `out/test-repo/`: the same layout made by `build-repo.sh`, signed with a throwaway key made for that build, plus a decoy `base-files 99:0` and a second throwaway key. `tests/smoke/repo.py` serves it to the live ISO in QEMU, with the shipped `.sources` (only URL and key swapped) and pin. apt must accept it only with the right key, refuse a `.deb` with one byte changed, and keep the decoy at -1.
 - **From 0.1:** a 0.1 system has no Tekne source, so it joins once by installing 0.2's `tekne-apt-sources` `.deb` from the release page. After that, `apt upgrade` brings the rest. CI's upgrade test (SPEC §8, Phase 9) runs this path from the 0.1 ISO until 0.2 is out.
 - **Alternatives:**
   - Sign `InRelease` locally with the offline key, with CI only uploading. That keeps the key off GitHub entirely, but every release needs a manual signing step.
   - A domain of the maintainer's own pointed at Pages, so the hosting could move without touching installed systems. Not wanted for now.
-- **History:** 2026-10-01 proposed (SPEC §8) and decided by the maintainer: a CI-held signing subkey behind an approval gate, the `github.io` address, and a pre-release suite. 2026-10-02: the maintainer created the key, moved the primary key offline, and set up the `repo-publish` environment, its secrets and Pages; the fingerprints are recorded above. Same day, the first signing subkey (`0565…`) was exposed: a terminal read in a Claude Code session returned its passphrase-protected private block into the session transcript. It had signed nothing, and nothing trusted it yet. The maintainer revoked it (reason: compromised), added `82C3…` from the offline primary, changed the passphrase on all keys, and replaced both CI secrets. This was a first run of the rotation steps.
+- **History:** 2026-10-01 proposed (SPEC §8) and decided by the maintainer: a CI-held signing subkey behind an approval gate, the `github.io` address, and a pre-release suite. 2026-10-02: the maintainer created the key, moved the primary key offline, and set up the `repo-publish` environment, its secrets and Pages; the fingerprints are recorded above. Same day, the first signing subkey (`0565…`) was exposed: a terminal read in a Claude Code session returned its passphrase-protected private block into the session transcript. It had signed nothing, and nothing trusted it yet. The maintainer revoked it (reason: compromised), added `82C3…` from the offline primary, changed the passphrase on all keys, and replaced both CI secrets. This was a first run of the rotation steps. Same day (Phase 8): implemented, with the pin on `o=Tekne`, the build isolation through `config/apt/apt.conf`, and publishing split into `sign` and `deploy` jobs.

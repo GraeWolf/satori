@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+### Added
+- Tekne's own APT repository (DEC-040), so installed systems get `tekne-*`
+  updates with `apt update && apt upgrade`. `tekne-apt-sources` adds its source
+  (`https://graewolf.github.io/tekne/apt/`, suite `excalibur`), its key and a
+  pin that allows only `tekne-*` packages from it. It's published from GitHub
+  releases once a person publishes one, and signed with a key whose primary
+  half is kept offline; fingerprints are in DEC-040.
+- `scripts/build-repo.sh` builds and signs the repository;
+  `.github/workflows/publish-repo.yml` and `scripts/ci-publish-repo.sh`
+  publish it to GitHub Pages after the maintainer approves.
+- Every build writes a test repository signed with a throwaway key
+  (`out/test-repo/`), and `tests/smoke/repo.py` checks in QEMU that apt takes
+  it only with the right key, refuses a tampered package, and never installs
+  anything but `tekne-*` from it. CI runs it on every build.
+- `build-info.txt` records each `.deb`'s SHA-256, and releases carry the
+  `.deb`s, checked against it.
+
+### Changed
+- The build never contacts Tekne's own repository: `live-build/config/apt/apt.conf`
+  blocks it while the image is built, and the build fails if anything came
+  from it. Expect "Failed to fetch .../tekne/apt/..." warnings in the build log.
+- The build container also installs `gnupg`, to sign repositories.
+
 ## 0.1 (2026-10-01)
 
 The first release of **Tekne**: a systemd-free desktop respin of Devuan 6

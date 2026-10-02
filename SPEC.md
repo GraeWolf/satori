@@ -128,14 +128,17 @@ The version comes from the `VERSION` file. A clean checkout of tag `v<VERSION>` 
 Output goes to `out/` (git-ignored):
 - `tekne-<version>-amd64.iso` and `.sha256`
 - `tekne-<version>-amd64.packages`: the package manifest
-- `build-info.txt`: git SHA, dirty flag, build date, base image digest, build image ID, live-build version, ISO size and checksum, package count
+- `build-info.txt`: git SHA, dirty flag, build date, base image digest, build image ID, live-build version, ISO size and checksum, package count, and each Tekne `.deb`'s SHA-256 (DEC-040)
 - `build.log`: the full live-build log
+- `packages/`: Tekne's `.deb`s
+- `test-repo/`: a test copy of Tekne's APT repository, signed with a throwaway key made for this build, for `tests/smoke/repo.py` (DEC-040)
 - `cache/`: live-build's downloaded-package cache, reused between builds (root-owned)
 
 ### 5.2 Test
 - `scripts/test-in-qemu.sh`: boots the ISO under SeaBIOS or OVMF in a QEMU window, for hands-on testing.
 - `tests/smoke/` automated tests, driven over the serial console. The live ISO's GRUB menu has a "serial console" entry (hotkey `s`) that sends kernel output to `ttyS0` and starts a serial login prompt. Tests press `s` at the menu; the default entry is unaffected.
   - `tests/smoke/live-boot.py`: the live image boots on BIOS and UEFI, a login prompt appears, and the no-systemd runtime check passes.
+  - `tests/smoke/repo.py`: in the live image, apt accepts the build's test repository only with its key, refuses a tampered `.deb`, and the shipped pin keeps everything but `tekne-*` at -1 (DEC-040).
   - `tests/smoke/upgrade.py`: upgrades a kept `install.py` system to the current build's packages, then re-runs the installed-system checks (DEC-032).
   - `tests/smoke/install.py`: install matrix, {BIOS, UEFI} × {plain, LUKS} = 4 unattended installs (answers file via QEMU fw_cfg, [docs/installer.md](docs/installer.md) §6). Each installed system must boot to a login prompt and pass `tests/smoke/installed-checks.sh`. `tests/smoke/qemu_serial.py` holds the shared QEMU and serial-console code.
 - Manual QA checklist in `docs/testing.md`, for things that are hard to automate on real hardware: Wi-Fi, audio, suspend/resume, hibernate/resume, backlight, external monitors.
@@ -172,6 +175,7 @@ tekne/
 ├── live-build/
 │   ├── auto/{config,build,clean}
 │   └── config/
+│       ├── apt/apt.conf           # build only: keeps the build away from Tekne's own repository (DEC-040)
 │       ├── package-lists/
 │       │   ├── base.list.chroot
 │       │   ├── live.list.chroot   # live-only: live-boot, live-config, tekne-installer
@@ -190,13 +194,15 @@ tekne/
 │   ├── build.sh                   # host side: container build + run (needs root)
 │   ├── build-in-container.sh      # container side: live-build, checks, outputs
 │   ├── build-packages.sh
+│   ├── build-repo.sh              # Tekne's signed APT repository from .debs (DEC-040)
 │   ├── check-no-systemd.sh
+│   ├── ci-publish-repo.sh         # CI: publish the repository from published releases (DEC-040)
 │   ├── ci-release.sh              # CI: draft GitHub release from a tested tag (DEC-039)
 │   └── test-in-qemu.sh
 ├── tests/
 │   ├── systemd-allowlist.txt
-│   └── smoke/                     # serial-console tests: live-boot.py, install.py,
-│                                  # installed-checks.sh, qemu_serial.py
+│   └── smoke/                     # serial-console tests: live-boot.py, repo.py, install.py,
+│                                  # upgrade.py, installed-checks.sh, qemu_serial.py
 └── docs/
     ├── building.md
     ├── customizing.md
@@ -315,7 +321,7 @@ Phase numbers continue from §7.
 - ✅ The maintainer has marked the repository decision Decided, and Q1 to Q4 are answered. Passed 2026-10-01 (DEC-040, §8.5).
 - ✅ The repository key exists. Its public half is in `packages/tekne-apt-sources/keys/` with a line in `SHA256SUMS`, and its fingerprint is in DECISIONS.md. The primary private key isn't on any machine or service CI can reach. Passed 2026-10-02: `tekne.gpg`, primary `2401BB77…D11D7B37` (DEC-040). Only the signing subkey goes to CI.
 
-**Phase 8: Building and publishing the repository.**
+**Phase 8: Building and publishing the repository.** In progress (2026-10-02). Built and tested locally on `0.2-rc1-dev54`: `repo.py`, `live-boot.py` and all four `install.py` cases pass. `repo.py` runs in the live image, which has the same `tekne-apt-sources` files as installed systems; Phase 9 covers an installed system. Waiting on the first publish (0.2-rc1) for the suite and key criterion; `scripts/ci-publish-repo.sh`'s release selection and checks pass locally against test release lists.
 - A script builds a signed repository from a directory of `.deb`s with a given key. `tekne-apt-sources` ships the source, key and pin. The `release` job attaches the `.deb`s, and the `publish-repo` job publishes them.
 - ✅ The same script, run locally with a throwaway test key, produces the same layout as CI, so the repository can be tested without the real key.
 - ✅ On an installed system, `apt-cache policy` shows the Tekne repository offering only `tekne-*` packages. Everything else from it is at priority -1 (DEC-026 rule 3). The build's global-key check still passes, because the Tekne key is trusted only through `Signed-By`.

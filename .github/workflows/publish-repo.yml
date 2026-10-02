@@ -1,0 +1,76 @@
+# Publish Tekne's APT repository to GitHub Pages (SPEC.md §8, DEC-040).
+#
+# It runs when a person publishes a GitHub release (DEC-039 creates releases
+# as drafts), so pushes, tags and drafts never change what installed systems
+# receive. It can be re-run by hand, e.g. after a signing key rotation. Either
+# way the sign job waits for the maintainer's approval: it's the only job in
+# the repo-publish environment, which holds the signing subkey and requires a
+# reviewer.
+name: publish-repo
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# One publish at a time; a second waits instead of cancelling the first.
+concurrency:
+  group: publish-repo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: repo-publish
+    steps:
+      # Actions are pinned by commit (CLAUDE.md: pin every external input).
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Picks the newest release and pre-release that carry Tekne's .debs and
+      # checks every .deb against its release's build-info.txt.
+      - name: Fetch the published packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: scripts/ci-publish-repo.sh fetch work
+
+      # Built and signed in the digest-pinned build container, with the same
+      # script and tools as the test repository every build makes. The
+      # signatures must verify against the key in tekne-apt-sources.
+      - name: Build and sign the repository
+        env:
+          TEKNE_REPO_SIGNING_KEY: ${{ secrets.TEKNE_REPO_SIGNING_KEY }}
+          TEKNE_REPO_SIGNING_PASSPHRASE: ${{ secrets.TEKNE_REPO_SIGNING_PASSPHRASE }}
+        run: |
+          docker build --network=host -t tekne-build -f container/Containerfile container
+          docker run --rm -v "${PWD}:/src:ro" -v "${PWD}/work:/work" \
+            -e TEKNE_REPO_SIGNING_KEY -e TEKNE_REPO_SIGNING_PASSPHRASE \
+            tekne-build /src/scripts/ci-publish-repo.sh build /work
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: work/site
+
+  # Deploying needs GitHub's own github-pages environment, so it's a separate
+  # job, which never sees the signing key.
+  deploy:
+    needs: sign
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}apt/
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
