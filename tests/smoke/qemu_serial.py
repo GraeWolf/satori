@@ -1,9 +1,13 @@
 """Shared helpers for the QEMU smoke tests: drive a VM over its serial console."""
+import functools
 import glob
+import http.server
 import os
 import select
 import shutil
+import socketserver
 import subprocess
+import threading
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -93,3 +97,18 @@ def stop(proc, timeout=60):
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait()
+
+
+class _QuietHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+
+
+def serve(root):
+    """Serve root over HTTP on a free loopback port, in a background thread.
+    A VM on QEMU's user network reaches it at http://10.0.2.2:<port>/.
+    Call .shutdown() on the result when done."""
+    handler = functools.partial(_QuietHandler, directory=root)
+    server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server

@@ -84,6 +84,8 @@ sudo scripts/build.sh --packages-only     # about a minute
 sudo apt install ./out/packages/tekne-{apt-sources,branding,config,desktop}_*.deb
 ```
 
-`tests/smoke/upgrade.py` checks this path: it upgrades a system installed from
-an earlier build and re-runs the installed-system checks. All testing happens in virtual machines;
-only files under `out/` are written on the host.
+From 0.2, Tekne's packages also come from its own APT repository (DEC-040),
+so `apt upgrade` covers both. `tests/smoke/upgrade.py` checks that path in CI:
+it installs the previous release, upgrades it through apt from a test copy of
+the repository, and re-runs the installed-system checks. All testing happens
+in virtual machines; only files under `out/` are written on the host.

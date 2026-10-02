@@ -81,7 +81,8 @@ tests/smoke/live-boot.py               # live ISO on BIOS and UEFI: sysvinit, de
 tests/smoke/repo.py                    # Tekne's APT repository: right key, wrong key, tampered .deb, pin (DEC-040)
 tests/smoke/install.py                 # unattended installs {BIOS,UEFI} x {plain,LUKS}: booted, checked, hibernated and resumed
 tests/smoke/install.py uefi luks --keep   # one case, keeping the VM in out/install-test/uefi-luks
-tests/smoke/upgrade.py out/install-test/uefi-luks   # upgrade a kept VM to out/packages and re-check it
+tests/smoke/upgrade.py                 # install the previous release, upgrade it to this build with apt, re-check it
+tests/smoke/upgrade.py out/install-test/uefi-luks   # the same upgrade, from a kept install.py case
 scripts/test-in-qemu.sh uefi           # the newest ISO in a QEMU window (--disk, --installed)
 ```
 
@@ -170,7 +171,10 @@ tested tag (DEC-039).
    signing subkey, checks the signatures against `keys/tekne.gpg`, and deploys
    it to GitHub Pages: a release goes into `excalibur` and `excalibur-rc`, a
    pre-release into `excalibur-rc` only.
-6. Set `VERSION` to the next version and commit, so later dev builds sort above
+6. Point `tests/smoke/previous-release` at the release you just published
+   (its tag, ISO name, and the ISO's SHA-256 from its `.sha256` asset), so
+   CI's upgrade test starts from it (SPEC §8, Phase 9).
+7. Set `VERSION` to the next version and commit, so later dev builds sort above
    the release: after a release candidate, the next candidate (`0.1-rc2` →
    `0.1-rc3`); after a final release, the next series (`0.1` → `0.2-rc1`).
    Never the final version straight after a candidate: `0.1~dev…` sorts below

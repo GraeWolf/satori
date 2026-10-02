@@ -139,7 +139,7 @@ Output goes to `out/` (git-ignored):
 - `tests/smoke/` automated tests, driven over the serial console. The live ISO's GRUB menu has a "serial console" entry (hotkey `s`) that sends kernel output to `ttyS0` and starts a serial login prompt. Tests press `s` at the menu; the default entry is unaffected.
   - `tests/smoke/live-boot.py`: the live image boots on BIOS and UEFI, a login prompt appears, and the no-systemd runtime check passes.
   - `tests/smoke/repo.py`: in the live image, apt accepts the build's test repository only with its key, refuses a tampered `.deb`, and the shipped pin keeps everything but `tekne-*` at -1 (DEC-040).
-  - `tests/smoke/upgrade.py`: upgrades a kept `install.py` system to the current build's packages, then re-runs the installed-system checks (DEC-032).
+  - `tests/smoke/upgrade.py`: installs the previous release from its published ISO (pinned in `tests/smoke/previous-release`), upgrades it to the current build with `apt upgrade` from the build's test repository, reboots and re-runs `install.py`'s checks, hibernate/resume included (DEC-040). It can also start from a kept `install.py` case.
   - `tests/smoke/install.py`: install matrix, {BIOS, UEFI} × {plain, LUKS} = 4 unattended installs (answers file via QEMU fw_cfg, [docs/installer.md](docs/installer.md) §6). Each installed system must boot to a login prompt and pass `tests/smoke/installed-checks.sh`. `tests/smoke/qemu_serial.py` holds the shared QEMU and serial-console code.
 - Manual QA checklist in `docs/testing.md`, for things that are hard to automate on real hardware: Wi-Fi, audio, suspend/resume, hibernate/resume, backlight, external monitors.
 
@@ -330,7 +330,7 @@ Phase numbers continue from §7.
 - ✅ Publishing a pre-release updates `excalibur-rc` only, and publishing a release updates both suites. A push, a tag or an unpublished draft changes nothing, and `publish-repo` is the only job that can read the signing key.
 - ✅ `publish-repo` refuses any `.deb` whose checksum differs from the one in that build's `build-info.txt`.
 
-**Phase 9: Upgrade testing in CI.**
+**Phase 9: Upgrade testing in CI.** In progress (2026-10-02). `tests/smoke/upgrade.py` passes locally: v0.1's released ISO (pinned in `tests/smoke/previous-release`) installed with UEFI and LUKS, the one-time step, `apt upgrade` to `0.2~rc1~dev54` from the test repository, then a reboot and every installed-system check, hibernate/resume included. Complete when it passes in CI.
 - `tests/smoke/upgrade.py` can start from a release ISO and upgrade through apt from a repository served to the VM. That repository is built by Phase 8's script with the test key. Only the URL and the key differ from what installed systems use. The pin and the rest of the `.sources` entry are the shipped ones.
 - ✅ The previous release's ISO is a pinned input: its checksum is committed in this repository and updated at each release, and CI checks the download against it.
 - ✅ On every CI build, a UEFI+LUKS system installed from the previous release's ISO upgrades to the current build with `apt update && apt upgrade`, then passes `installed-checks.sh` and hibernate/resume. Until 0.2 is out, the previous release is 0.1, so this test also runs Goal 4's one-time step.

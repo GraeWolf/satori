@@ -176,9 +176,9 @@ def boot_and_check(mode, luks, disk, vars_path, workdir):
     return results
 
 
-def run_case(mode, luks, iso, keep):
-    name = f"{mode}-{'luks' if luks else 'plain'}"
-    workdir = os.path.join(WORK, name)
+def new_case(workdir, mode, luks):
+    """A fresh work directory with a blank disk, UEFI variables (UEFI only)
+    and the answers file. Returns (disk, vars_path, answers_path)."""
     shutil.rmtree(workdir, ignore_errors=True)
     os.makedirs(workdir)
     disk = os.path.join(workdir, "disk.qcow2")
@@ -189,6 +189,13 @@ def run_case(mode, luks, iso, keep):
         for key, value in ANSWERS.items():
             f.write(f"{key}={value}\n")
         f.write(f"ENCRYPT={'yes' if luks else 'no'}\n")
+    return disk, vars_path, answers_path
+
+
+def run_case(mode, luks, iso, keep):
+    name = f"{mode}-{'luks' if luks else 'plain'}"
+    workdir = os.path.join(WORK, name)
+    disk, vars_path, answers_path = new_case(workdir, mode, luks)
 
     started = time.monotonic()
     try:

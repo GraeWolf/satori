@@ -18,6 +18,11 @@
   anything but `tekne-*` from it. CI runs it on every build.
 - `build-info.txt` records each `.deb`'s SHA-256, and releases carry the
   `.deb`s, checked against it.
+- `tests/smoke/upgrade.py` now installs the previous release from its
+  published ISO (pinned in `tests/smoke/previous-release`) and upgrades it to
+  the current build with `apt upgrade`, as installed systems will; CI runs it
+  on every build. From 0.1 it also runs the one-time step of installing the
+  new `tekne-apt-sources`.
 
 ### Changed
 - The build never contacts Tekne's own repository: `live-build/config/apt/apt.conf`

@@ -24,38 +24,20 @@ swapped for the test repository's. Then, with only that source enabled:
 
 Nothing is installed from the test repository. Exits non-zero on failure.
 """
-import functools
-import http.server
 import os
 import shutil
-import socketserver
 import sys
 import tempfile
-import threading
 import time
 
 from qemu_serial import (OUT, SERIAL_ENTRY_HOTKEY, SERIAL_ENTRY_TITLE, Serial,
-                         newest_iso, qemu_command, start, stop)
+                         newest_iso, qemu_command, serve, start, stop)
 
 TEST_REPO = os.path.join(OUT, "test-repo")
 LIVE_USER, LIVE_PASSWORD = "user", "live"
 MENU_TIMEOUT, BOOT_TIMEOUT, CMD_TIMEOUT = 60, 300, 180
 BEGIN, END = "__TEKNE" + "_BEGIN__", "__TEKNE" + "_END__"
 HOST = "10.0.2.2"
-
-
-def serve(root):
-    """Serve root over HTTP on a free port on loopback; QEMU's user network
-    forwards the VM's connections to 10.0.2.2 there."""
-    handler = functools.partial(QuietHandler, directory=root)
-    server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    return server
-
-
-class QuietHandler(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, *args):
-        pass
 
 
 def guest_script(port):
