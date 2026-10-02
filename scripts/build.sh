@@ -81,6 +81,7 @@ status=0
 if [ -n "${SUDO_UID:-}" ]; then
 	find "${OUT}" -maxdepth 1 -type f -exec chown "${SUDO_UID}:${SUDO_GID}" {} +
 	[ -d "${OUT}/packages" ] && chown -R "${SUDO_UID}:${SUDO_GID}" "${OUT}/packages"
+	[ -d "${OUT}/test-repo" ] && chown -R "${SUDO_UID}:${SUDO_GID}" "${OUT}/test-repo"
 	chown "${SUDO_UID}:${SUDO_GID}" "${OUT}"
 fi
 

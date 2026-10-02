@@ -15,6 +15,7 @@ if [ "${TEKNE_PACKAGES_ONLY:-no}" = yes ]; then
 	exit 0
 fi
 rm -f /out/tekne-*-amd64.* /out/build-info.txt /out/build.log
+rm -rf /out/test-repo
 
 rm -rf "${WORK}"
 mkdir -p "${WORK}/cache"
@@ -53,6 +54,14 @@ cd "${WORK}"
 lb config 2>&1 | tee -a /out/build.log
 lb build 2>&1 | tee -a /out/build.log
 
+# DEC-040: the build keeps away from Tekne's own repository (config/apt/apt.conf).
+# The hook 0510-check-apt-origins checks that up to the hooks; this covers the
+# apt-get update live-build runs after them, whose indexes go into the image.
+if ls chroot/var/lib/apt/lists/ | grep -q 'graewolf\.github\.io'; then
+	echo "FAIL: the image has indexes from Tekne's own repository" | tee -a /out/build.log
+	exit 1
+fi
+
 cp live-image-amd64.packages "/out/${NAME}.packages"
 echo "==> Checking the no-systemd rule (SPEC.md §4)" | tee -a /out/build.log
 /src/scripts/check-no-systemd.sh "/out/${NAME}.packages" 2>&1 | tee -a /out/build.log
@@ -74,4 +83,33 @@ iso_size_bytes: $(stat -c %s "/out/${NAME}.iso")
 iso_sha256: $(cut -d' ' -f1 "/out/${NAME}.iso.sha256")
 packages: $(wc -l < "/out/${NAME}.packages")
 EOF
+# One line per Tekne .deb, "deb: FILE SHA256". CI's release and publishing
+# jobs check the .debs they publish against these (DEC-040).
+(cd /out/packages && for deb in *.deb; do echo "deb: ${deb} $(sha256sum < "${deb}" | cut -d' ' -f1)"; done) >> /out/build-info.txt
 cat /out/build-info.txt
+
+# A test repository (DEC-040): the same layout as the published one, built by
+# the same script, but signed with a throwaway key made for this build only
+# and thrown away with it. tests/smoke/repo.py serves it to the live ISO in
+# QEMU. It holds this build's Tekne packages and a decoy: a "base-files" with
+# a higher version than any real one, which tekne-apt-sources' pin must keep
+# from ever being installed. wrong-key.gpg is another throwaway key, for
+# checking that apt refuses a repository signed by a key it doesn't trust.
+echo "==> Building the test repository" | tee -a /out/build.log
+TR="$(mktemp -d)"
+mkdir -p "${TR}/debs" "${TR}/decoy/DEBIAN" /out/test-repo
+cp /out/packages/tekne-{apt-sources,branding,config,desktop}_*.deb "${TR}/debs/"
+printf '%s\n' "Package: base-files" "Version: 99:0" "Architecture: all" \
+	"Maintainer: Tekne project <noreply@tekne.invalid>" \
+	"Description: decoy for tests/smoke/repo.py; must never be installed" > "${TR}/decoy/DEBIAN/control"
+dpkg-deb --root-owner-group -b "${TR}/decoy" "${TR}/debs/base-files_99.0_all.deb" >/dev/null
+for key in test wrong; do
+	mkdir -m 700 "${TR}/gnupg-${key}"
+	GNUPGHOME="${TR}/gnupg-${key}" gpg --batch --quiet --passphrase '' \
+		--quick-gen-key "Tekne ${key} repository key (throwaway, this build only)" ed25519 sign 1d
+	GNUPGHOME="${TR}/gnupg-${key}" gpg --batch --export > "/out/test-repo/${key}-key.gpg"
+done
+GNUPGHOME="${TR}/gnupg-test" TEKNE_REPO_VERIFY_KEY=/out/test-repo/test-key.gpg \
+	/src/scripts/build-repo.sh /out/test-repo/repo excalibur="${TR}/debs" excalibur-rc="${TR}/debs" 2>&1 | tee -a /out/build.log
+for key in test wrong; do GNUPGHOME="${TR}/gnupg-${key}" gpgconf --kill gpg-agent; done
+rm -rf "${TR}"

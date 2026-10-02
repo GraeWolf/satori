@@ -1,0 +1,12 @@
+# Tekne's own APT repository, for Tekne's packages (DEC-040). Shipped by
+# tekne-apt-sources; the pin in /etc/apt/preferences.d/tekne.pref stops it
+# providing any other package. It's published from tested GitHub releases.
+#
+# Suites: "excalibur" carries releases. To also get release candidates,
+# change it to "excalibur-rc", which carries both.
+Types: deb
+URIs: https://graewolf.github.io/tekne/apt/
+Suites: excalibur
+Components: main
+Architectures: amd64
+Signed-By: /usr/share/tekne/keyrings/tekne.gpg

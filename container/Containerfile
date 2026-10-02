@@ -1,5 +1,7 @@
 # Tekne build environment: Devuan Excalibur plus Debian's live-build (DEC-003).
 # Built and run by scripts/build.sh; every external input is pinned.
+# apt-utils (apt-ftparchive) and gnupg build and sign Tekne's APT repository
+# (scripts/build-repo.sh, DEC-040).
 FROM docker.io/devuan/devuan:excalibur@sha256:07b5f16e73ad7f81bd59b54e8901de8bf0a998be0c1df75a8d3e441f58b027aa
 
 # Debian trixie's live-build. Devuan's own package is a 2016 fork without UEFI
@@ -10,7 +12,7 @@ ARG LIVE_BUILD_SHA1=4dd9682896f13d1824d3819773791c3595076436
 
 RUN apt-get update \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-		apt-utils bzip2 ca-certificates cpio curl debhelper debootstrap dpkg-dev file librsvg2-bin rsync wget xz-utils \
+		apt-utils bzip2 ca-certificates cpio curl debhelper debootstrap dpkg-dev file gnupg librsvg2-bin rsync wget xz-utils \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN set -e; \

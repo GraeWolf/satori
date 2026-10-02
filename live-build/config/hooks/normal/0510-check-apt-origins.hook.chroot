@@ -3,7 +3,25 @@
 # other than those its pin allows (i.e. replaced a Devuan package), or if any
 # key APT trusts for every repository didn't come from Devuan's or Debian's
 # keyring packages.
+# DEC-040: also fail it if anything came from Tekne's own repository. The
+# build blocks that repository (config/apt/apt.conf), so the image holds the
+# Tekne packages built from this commit and no others.
 set -e
+
+if ls /var/lib/apt/lists/ | grep -q 'graewolf\.github\.io'; then
+	echo "FAIL: the build fetched indexes from Tekne's own repository:"
+	ls /var/lib/apt/lists/ | grep 'graewolf\.github\.io'
+	exit 1
+fi
+# Every Tekne package is built with the same version (scripts/build.sh), so
+# a second version means one came from somewhere else.
+versions="$(dpkg-query -W -f '${db:Status-Status} ${Version}\n' 'tekne-*' 2>/dev/null | awk '$1 == "installed" { print $2 }' | sort -u)"
+if [ "$(echo "${versions}" | wc -l)" -ne 1 ]; then
+	echo "FAIL: Tekne's packages don't all have this build's version:"
+	dpkg-query -W -f '  ${Package} ${Version}\n' 'tekne-*'
+	exit 1
+fi
+echo "OK: nothing came from Tekne's own repository; every tekne-* package is ${versions}"
 
 for key in /etc/apt/trusted.gpg.d/*; do
 	[ -e "${key}" ] || continue
@@ -21,6 +39,8 @@ apt-cache policy $(dpkg-query -W -f '${Package}\n') | awk '
 			return pkg ~ /^(brave-origin|brave-keyring)$/
 		if (url ~ /xlibre-debian\.github\.io/)
 			return pkg ~ /^(xlibre|xlibre-.*|xserver-xlibre.*)$/
+		if (url ~ /graewolf\.github\.io\/tekne\/apt/)
+			return pkg ~ /^tekne-/
 		return 1
 	}
 	function finish() {
@@ -33,7 +53,7 @@ apt-cache policy $(dpkg-query -W -f '${Package}\n') | awk '
 	/^     [^ ]/                { inst = 0; next }
 	inst && /^        [-0-9]+ / {
 		url = $2
-		if (url ~ /brave-browser-apt-release|xlibre-debian/) third = url
+		if (url ~ /brave-browser-apt-release|xlibre-debian|graewolf\.github\.io/) third = url
 		else if (url != "/var/lib/dpkg/status") other = 1
 	}
 	END {

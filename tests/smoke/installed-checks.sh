@@ -28,6 +28,9 @@ case "$(uname -r) $(dpkg-query -W -f '${Version}' linux-image-amd64)" in
 	*bpo*) echo "KERNEL=backports" ;;
 	*)     echo "KERNEL=stable" ;;
 esac
+# DEC-040: Tekne's own repository is configured: its source, pin and key.
+echo "TEKNE_REPO=$([ -f /etc/apt/sources.list.d/tekne.sources ] && [ -f /etc/apt/preferences.d/tekne.pref ] \
+	&& [ -f /usr/share/tekne/keyrings/tekne.gpg ] && echo configured || echo missing)"
 echo "GRUB_THEME=$([ -f /boot/grub/themes/tekne/theme.txt ] && echo present || echo missing)"
 echo "HOSTNAME=$(cat /etc/hostname)"
 echo "TIMEZONE=$(cat /etc/timezone)"

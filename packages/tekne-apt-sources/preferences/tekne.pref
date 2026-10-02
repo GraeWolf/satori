@@ -1,0 +1,15 @@
+# Tekne's own repository may only provide Tekne's packages (DEC-040, DEC-026).
+# Anything else it published could never be installed, so it can't replace a
+# Devuan package.
+#
+# The pin matches the repository's Origin field (o=Tekne, set by
+# scripts/build-repo.sh and covered by its signature) rather than its host
+# name, so the tests can serve the same repository from anywhere and still
+# exercise this file.
+Package: tekne-*
+Pin: release o=Tekne
+Pin-Priority: 500
+
+Package: *
+Pin: release o=Tekne
+Pin-Priority: -1
