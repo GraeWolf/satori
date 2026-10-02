@@ -147,6 +147,14 @@ Installed systems get Tekne's packages from `https://graewolf.github.io/tekne/ap
 published GitHub releases (see "Release" below), never from a push or a dev
 build, and a build never fetches from it (`live-build/config/apt/apt.conf`).
 
+Publishing needs two GitHub environments, set up once in the repository's
+settings. If either is ever recreated, check:
+
+| Environment | Setting |
+|---|---|
+| `repo-publish` | Required reviewer: the maintainer. Secrets `TEKNE_REPO_SIGNING_KEY` and `TEKNE_REPO_SIGNING_PASSPHRASE`. No branch restriction: publishing runs on a release's tag. |
+| `github-pages` | Created by GitHub when Pages is set to deploy from GitHub Actions. It allows only `master` by default; it also needs a tag rule `v*`, or the `deploy` job is refused for every release. |
+
 `scripts/build-repo.sh` builds and signs it. Every build runs it to make
 `out/test-repo/`, signed with a throwaway key, for `tests/smoke/repo.py` and
 `upgrade.py`; CI's `publish-repo` workflow runs it with the real signing
