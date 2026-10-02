@@ -363,7 +363,8 @@ When a decision changes, edit the entry in place and add a dated line to its
   - A signing subkey with a one-year expiry is the only key CI holds. It's a secret of a GitHub Actions environment, `repo-publish`, that needs the maintainer's approval to run. Only the `publish-repo` job uses that environment. This is the same split as DEC-039's write token.
   - **The key** (created 2026-10-02): `packages/tekne-apt-sources/keys/tekne.gpg`, with its checksum in `keys/SHA256SUMS`.
     - Primary: `2401BB7742E09C29AA41B29441BEF97FD11D7B37` (Ed25519, certify only, no expiry).
-    - Signing subkey: `0565CDB56C65979D951C3E5608DEE513068CADDB` (Ed25519, expires 2027-10-02, so it must be rotated before then).
+    - Signing subkey: `82C321645DE72C0575A968AC64CE1E0BA73FF9F4` (Ed25519, expires 2027-10-02, so it must be rotated before then).
+    - Revoked: `0565CDB56C65979D951C3E5608DEE513068CADDB`, the first signing subkey. It was exposed before it signed anything (History, 2026-10-02).
     - The primary key's passphrase-protected backup and its revocation certificate are on a USB stick the maintainer keeps offline. No copy is on the development laptop.
   - **Rotation:** before the subkey expires, the maintainer adds a new one with the offline primary. A `tekne-apt-sources` update carrying the new public key is published while the old subkey still signs, and the CI secret is swapped after that. The steps go in `docs/building.md`.
 - **Publishing:**
@@ -376,4 +377,4 @@ When a decision changes, edit the entry in place and add a dated line to its
 - **Alternatives:**
   - Sign `InRelease` locally with the offline key, with CI only uploading. That keeps the key off GitHub entirely, but every release needs a manual signing step.
   - A domain of the maintainer's own pointed at Pages, so the hosting could move without touching installed systems. Not wanted for now.
-- **History:** 2026-10-01 proposed (SPEC §8) and decided by the maintainer: a CI-held signing subkey behind an approval gate, the `github.io` address, and a pre-release suite. 2026-10-02: the maintainer created the key, moved the primary key offline, and set up the `repo-publish` environment, its secrets and Pages; the fingerprints are recorded above.
+- **History:** 2026-10-01 proposed (SPEC §8) and decided by the maintainer: a CI-held signing subkey behind an approval gate, the `github.io` address, and a pre-release suite. 2026-10-02: the maintainer created the key, moved the primary key offline, and set up the `repo-publish` environment, its secrets and Pages; the fingerprints are recorded above. Same day, the first signing subkey (`0565…`) was exposed: a terminal read in a Claude Code session returned its passphrase-protected private block into the session transcript. It had signed nothing, and nothing trusted it yet. The maintainer revoked it (reason: compromised), added `82C3…` from the offline primary, changed the passphrase on all keys, and replaced both CI secrets. This was a first run of the rotation steps.
