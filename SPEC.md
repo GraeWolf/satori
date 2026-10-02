@@ -141,6 +141,7 @@ Output goes to `out/` (git-ignored):
   - `tests/smoke/repo.py`: in the live image, apt accepts the build's test repository only with its key, refuses a tampered `.deb`, and the shipped pin keeps everything but `tekne-*` at -1 (DEC-040).
   - `tests/smoke/upgrade.py`: installs the previous release from its published ISO (pinned in `tests/smoke/previous-release`), upgrades it to the current build with `apt upgrade` from the build's test repository, reboots and re-runs `install.py`'s checks, hibernate/resume included (DEC-040). It can also start from a kept `install.py` case.
   - `tests/smoke/install.py`: install matrix, {BIOS, UEFI} × {plain, LUKS} = 4 unattended installs (answers file via QEMU fw_cfg, [docs/installer.md](docs/installer.md) §6). Each installed system must boot to a login prompt and pass `tests/smoke/installed-checks.sh`. `tests/smoke/qemu_serial.py` holds the shared QEMU and serial-console code.
+- `tests/key-rotation.sh`: the signing-subkey rotation in `docs/building.md`, with throwaway keys and APT, in the build container on every build (DEC-040).
 - Manual QA checklist in `docs/testing.md`, for things that are hard to automate on real hardware: Wi-Fi, audio, suspend/resume, hibernate/resume, backlight, external monitors.
 
 ### 5.3 Reproducibility
@@ -200,6 +201,7 @@ tekne/
 │   ├── ci-release.sh              # CI: draft GitHub release from a tested tag (DEC-039)
 │   └── test-in-qemu.sh
 ├── tests/
+│   ├── key-rotation.sh            # the signing-subkey rotation, with throwaway keys (DEC-040)
 │   ├── systemd-allowlist.txt
 │   └── smoke/                     # serial-console tests: live-boot.py, repo.py, install.py,
 │                                  # upgrade.py, installed-checks.sh, qemu_serial.py
@@ -268,9 +270,9 @@ Each phase is one or more small commits and ends only when every one of its crit
 ## 8. Tekne 0.2
 
 > **Status:** agreed by the maintainer (2026-10-01) and recorded as DEC-040, which
-> amends DEC-006. Phase 7 is complete; Phase 8 is next. The docs that
-> describe how updates work today (README, `docs/customizing.md`) change in Phase 10,
-> when the repository exists.
+> amends DEC-006. Phase 7 is complete; Phases 8–10 are built and in progress
+> (2026-10-02). The repository goes live with the first published release,
+> 0.2-rc1.
 
 ### 8.1 Theme: updates through APT
 
@@ -335,7 +337,7 @@ Phase numbers continue from §7.
 - ✅ The previous release's ISO is a pinned input: its checksum is committed in this repository and updated at each release, and CI checks the download against it.
 - ✅ On every CI build, a UEFI+LUKS system installed from the previous release's ISO upgrades to the current build with `apt update && apt upgrade`, then passes `installed-checks.sh` and hibernate/resume. Until 0.2 is out, the previous release is 0.1, so this test also runs Goal 4's one-time step.
 
-**Phase 10: Migration, docs, and the 0.2 release.**
+**Phase 10: Migration, docs, and the 0.2 release.** In progress (2026-10-02). The docs are written (README, `docs/customizing.md`, `docs/building.md`'s repository, key and rotation sections, CHANGELOG), and `tests/key-rotation.sh` passes on the host; every build now runs it too. Left: the `v0.2-rc1` release and first publish, the laptop's move to `excalibur-rc`, and `v0.2`.
 - README ("Update an installed Tekne"), `docs/customizing.md`, `docs/building.md` (publishing and key rotation), and CHANGELOG with 0.1's one-time step. DEC-039 is updated for the extra assets and the `publish-repo` job.
 - ✅ (maintainer) The development laptop, running 0.1, joins `excalibur-rc` with the documented one-time step and installs `0.2-rc1` from it with `apt upgrade`. The next candidate then arrives with plain `apt update && apt upgrade`.
 - ✅ The key-rotation steps work against test keys: a system that trusts the old subkey accepts a `tekne-apt-sources` update carrying the new one, then verifies a repository signed with it.

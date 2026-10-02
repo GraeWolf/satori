@@ -107,15 +107,23 @@ successfully; GRUB lists both under "Advanced options".
 
 ### APT repositories
 
-Besides Devuan's, Tekne enables Brave's and XLibre's repositories and
-`excalibur-backports`, each pinned to the few packages Tekne takes from it
-(DEC-026). The files are `/etc/apt/sources.list.d/tekne-*.sources`,
+Besides Devuan's, Tekne enables its own repository (DEC-040), Brave's and
+XLibre's repositories and `excalibur-backports`, each pinned to the few
+packages Tekne takes from it (DEC-026). The files are
+`/etc/apt/sources.list.d/tekne*.sources`,
 `/etc/apt/sources.list.d/brave-browser-release.sources` and
-`/etc/apt/preferences.d/tekne-*.pref`. To install another package from
+`/etc/apt/preferences.d/tekne*.pref`. To install another package from
 backports, name the suite: `sudo apt install foo/excalibur-backports`.
 
 ### Updating Tekne
 
-Devuan's packages update with `apt` as usual. Tekne's own `tekne-*` packages
-come from a build of this repository, not from a repository (DEC-006): see
-"Update an installed Tekne" in the [README](../README.md).
+`sudo apt update && sudo apt upgrade` updates everything from 0.2 on,
+including Tekne's own `tekne-*` packages, which come from Tekne's APT
+repository (DEC-040). A system installed from 0.1 needs one extra step first,
+and release candidates are a one-line change: see "Update an installed Tekne"
+in the [README](../README.md).
+
+If you edit `/etc/apt/sources.list.d/tekne.sources` (for example to follow
+release candidates), dpkg asks whether to keep your version when a
+`tekne-apt-sources` update changes that file. Keep yours unless the update's
+notes say the address or key changed.

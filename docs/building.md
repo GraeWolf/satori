@@ -131,12 +131,89 @@ one commit and note it in CHANGELOG.md.
 |---|---|
 | Build container base image | `container/Containerfile`: `FROM ...@sha256:...` |
 | Debian live-build | `container/Containerfile`: version, SHA-256, and snapshot.debian.org SHA-1 |
-| Tekne's, Brave's and XLibre's signing keys | `packages/tekne-apt-sources/keys/` and `keys/SHA256SUMS` (checked when the package builds); Tekne's fingerprints are in DEC-040 |
+| Tekne's, Brave's and XLibre's signing keys | `packages/tekne-apt-sources/keys/` and `keys/SHA256SUMS` (checked when the package builds); Tekne's fingerprints are in DEC-040, and rotating its signing subkey is above |
+| The previous release, for the upgrade test | `tests/smoke/previous-release`: tag, ISO name and SHA-256 |
 | Melia's signing key | `packages/tekne-config/files/usr/share/tekne/keyrings/melia.gpg`, and its fingerprint in `tekne-get-melia` |
 | GitHub Actions | `.github/workflows/build.yml` and `publish-repo.yml`: each `uses:` names a commit |
 
 Packages from Devuan's mirror aren't pinned to versions: a build gets the
 current ones, and the manifest records exactly which (SPEC §5.3).
+
+## Tekne's APT repository
+
+Installed systems get Tekne's packages from `https://graewolf.github.io/tekne/apt/`
+(DEC-040), which `tekne-apt-sources` configures. `excalibur` carries releases;
+`excalibur-rc` carries pre-releases and releases. It's built only from
+published GitHub releases (see "Release" below), never from a push or a dev
+build, and a build never fetches from it (`live-build/config/apt/apt.conf`).
+
+`scripts/build-repo.sh` builds and signs it. Every build runs it to make
+`out/test-repo/`, signed with a throwaway key, for `tests/smoke/repo.py` and
+`upgrade.py`; CI's `publish-repo` workflow runs it with the real signing
+subkey.
+
+### The signing key
+
+| | |
+|---|---|
+| Public key | `packages/tekne-apt-sources/keys/tekne.gpg`, checksum in `keys/SHA256SUMS`, fingerprints in DEC-040 |
+| Primary key (certify only) | Offline, on the maintainer's USB stick, with its revocation certificate. Never on a machine or service CI can reach. |
+| Signing subkey | `TEKNE_REPO_SIGNING_KEY` and `TEKNE_REPO_SIGNING_PASSPHRASE`, secrets of the `repo-publish` environment, which needs the maintainer's approval to run |
+| Expiry | The signing subkey expires a year after it's made (DEC-040 has the date). Rotate it at least a month before. |
+
+Handle the secret key material with care:
+- Work in a RAM keyring (`/dev/shm`), delete it when done, and stop its agent first (`gpgconf --homedir DIR --kill gpg-agent`).
+- Never print a secret key in a terminal. To copy one into a GitHub secret, run `copyq disable`, then `xclip -selection clipboard < FILE`; after pasting, clear the clipboard and run `copyq enable`. CopyQ saves its history to disk.
+- Write a new backup to a `.new` file and check it (`gpg --list-packets FILE | grep 'key packet'`) before replacing the old one. gpg skips any key whose passphrase prompt fails, and still writes the rest.
+- To change one key's passphrase, use `gpg-connect-agent --homedir DIR 'PASSWD <keygrip>' /bye` (keygrips come from `gpg --with-keygrip -K`). `gpg --passwd` with terminal prompts asks for every key in a row without saying which, which makes mistakes easy.
+
+### Rotating the signing subkey
+
+The order matters. Installed systems trust only the key file
+`tekne-apt-sources` gave them, so they must receive the new subkey, signed
+with the old one, before the repository is signed with the new one. A system
+that misses that update has to install the new `tekne-apt-sources` by hand.
+`tests/key-rotation.sh`, which every build runs, checks this sequence with
+throwaway keys.
+
+1. In a RAM keyring, import the primary key from the USB stick and add a
+   subkey:
+
+   ```sh
+   mkdir -m 700 /dev/shm/tekne-key
+   gpg --homedir /dev/shm/tekne-key --import /path/to/usb/tekne-repo-primary.asc
+   gpg --homedir /dev/shm/tekne-key --quick-add-key 2401BB7742E09C29AA41B29441BEF97FD11D7B37 ed25519 sign 1y
+   ```
+
+2. Export the public key to `packages/tekne-apt-sources/keys/tekne.gpg`,
+   update its line in `keys/SHA256SUMS` and the fingerprints in DEC-040, and
+   commit:
+
+   ```sh
+   gpg --homedir /dev/shm/tekne-key --export 2401BB7742E09C29AA41B29441BEF97FD11D7B37 > packages/tekne-apt-sources/keys/tekne.gpg
+   ```
+
+3. Release and publish that change as usual. CI still signs with the old
+   subkey, so every system accepts the update and now trusts both subkeys.
+   Leave time for systems to install it before the old subkey expires.
+4. Export the new subkey alone and replace `TEKNE_REPO_SIGNING_KEY` with it
+   (copying it as above, never printing it). Then run the `publish-repo`
+   workflow by hand (Actions → publish-repo → Run workflow) to re-sign the
+   repository with it.
+
+   ```sh
+   gpg --homedir /dev/shm/tekne-key --armor --export-secret-subkeys 'NEW_SUBKEY_FINGERPRINT!' > /dev/shm/tekne-key/ci-subkey.asc
+   ```
+
+5. Back up the primary key, now with the new subkey, to the USB stick: export
+   to a `.new` file, check it, then replace the old backup. Delete the RAM
+   keyring.
+
+If a subkey is exposed, rotate the same way at once, but first revoke it
+(`gpg --edit-key`, `key N`, `revkey`, reason "compromised") so the exported
+public key carries the revocation. The update that delivers it is still
+signed with the old subkey, because that's the only one systems trust. DEC-040's
+History records the one time this happened.
 
 ## Release
 

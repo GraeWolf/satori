@@ -113,3 +113,8 @@ GNUPGHOME="${TR}/gnupg-test" TEKNE_REPO_VERIFY_KEY=/out/test-repo/test-key.gpg \
 	/src/scripts/build-repo.sh /out/test-repo/repo excalibur="${TR}/debs" excalibur-rc="${TR}/debs" 2>&1 | tee -a /out/build.log
 for key in test wrong; do GNUPGHOME="${TR}/gnupg-${key}" gpgconf --kill gpg-agent; done
 rm -rf "${TR}"
+
+# The signing-subkey rotation in docs/building.md, with throwaway keys and
+# this container's APT, which is Devuan's like Tekne's (DEC-040).
+echo "==> Testing the signing key rotation" | tee -a /out/build.log
+/src/tests/key-rotation.sh 2>&1 | tee -a /out/build.log

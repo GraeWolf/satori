@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+**Upgrading from 0.1:** once, install this release's `tekne-apt-sources`
+from the release page (`sudo apt install ./tekne-apt-sources_*_all.deb`).
+After that, `sudo apt update && sudo apt upgrade` updates Tekne's packages
+along with Devuan's (DEC-040).
+
 ### Added
 - Tekne's own APT repository (DEC-040), so installed systems get `tekne-*`
   updates with `apt update && apt upgrade`. `tekne-apt-sources` adds its source
@@ -23,6 +28,8 @@
   the current build with `apt upgrade`, as installed systems will; CI runs it
   on every build. From 0.1 it also runs the one-time step of installing the
   new `tekne-apt-sources`.
+- `tests/key-rotation.sh`, run by every build: the signing-subkey rotation
+  in docs/building.md, with throwaway keys and Devuan's APT.
 
 ### Changed
 - The build never contacts Tekne's own repository: `live-build/config/apt/apt.conf`

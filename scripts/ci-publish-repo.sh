@@ -101,16 +101,28 @@ check_release() {
 	[ -f "${info}" ] || die "${tag}: no build-info.txt"
 	[ "$(field version)" = "${tag#v}" ] || die "${tag}: build-info.txt says version $(field version)"
 	[ "$(field git_dirty)" = no ] || die "${tag}: build-info.txt says the tree was dirty"
-	local pkgver p deb want got
+	local pkgver p deb pkg name want got found
 	pkgver="$(field package_version)"
 	for p in ${PACKAGES}; do
-		deb="${dir}/${p}_${pkgver}_all.deb"
-		[ -f "${deb}" ] || die "${tag}: $(basename "${deb}") missing"
-		want="$(field deb | awk -v f="$(basename "${deb}")" '$1 == f { print $2 }')"
-		got="$(sha256sum < "${deb}" | cut -d' ' -f1)"
-		[ -n "${want}" ] || die "${tag}: build-info.txt has no checksum for $(basename "${deb}")"
-		[ "${got}" = "${want}" ] || die "${tag}: $(basename "${deb}") doesn't match build-info.txt"
-		[ "$(dpkg-deb -f "${deb}" Version)" = "${pkgver}" ] || die "${tag}: $(basename "${deb}") isn't version ${pkgver}"
+		# GitHub renames assets with special characters ("~" becomes "."), so
+		# a release's file may not keep the name build-info.txt records. Find
+		# it by what's inside, check it under its real name, and restore that.
+		name="${p}_${pkgver}_all.deb"
+		want="$(field deb | awk -v f="${name}" '$1 == f { print $2 }')"
+		[ -n "${want}" ] || die "${tag}: build-info.txt has no checksum for ${name}"
+		found=""
+		for deb in "${dir}/${p}_"*.deb; do
+			[ -e "${deb}" ] || continue
+			pkg="$(dpkg-deb -f "${deb}" Package 2>/dev/null)" || die "${tag}: $(basename "${deb}") isn't a readable .deb"
+			[ "${pkg}" = "${p}" ] || continue
+			[ -z "${found}" ] || die "${tag}: two ${p} packages"
+			[ "$(dpkg-deb -f "${deb}" Version)" = "${pkgver}" ] || die "${tag}: $(basename "${deb}") isn't version ${pkgver}"
+			got="$(sha256sum < "${deb}" | cut -d' ' -f1)"
+			[ "${got}" = "${want}" ] || die "${tag}: $(basename "${deb}") doesn't match build-info.txt"
+			found="${deb}"
+		done
+		[ -n "${found}" ] || die "${tag}: ${name} missing"
+		[ "${found}" = "${dir}/${name}" ] || mv "${found}" "${dir}/${name}"
 	done
 	echo "ci-publish-repo: ${tag}: $(echo ${PACKAGES} | wc -w) packages match build-info.txt"
 }

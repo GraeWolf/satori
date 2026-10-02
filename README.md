@@ -76,16 +76,38 @@ The live user is `user`, password `live`.
 
 ## Update an installed Tekne
 
-Devuan packages update through APT as usual. Tekne's own packages come from a
-build (DEC-006):
+From 0.2, everything updates with apt. Tekne's own packages come from Tekne's
+APT repository (DEC-040), which `tekne-apt-sources` sets up: its key is
+pinned, and it may only provide `tekne-*` packages.
+
+```sh
+sudo apt update && sudo apt upgrade
+```
+
+**From 0.1**, which doesn't know Tekne's repository yet: once, install
+`tekne-apt-sources` from the [0.2 release](https://github.com/GraeWolf/tekne/releases/tag/v0.2),
+then upgrade as above. GitHub serves the file over HTTPS, as it does the ISO.
+
+```sh
+curl -fLO https://github.com/GraeWolf/tekne/releases/download/v0.2/tekne-apt-sources_0.2_all.deb
+sudo apt install ./tekne-apt-sources_0.2_all.deb
+```
+
+**Release candidates:** in `/etc/apt/sources.list.d/tekne.sources`, change
+`Suites: excalibur` to `Suites: excalibur-rc`. That suite carries releases
+too, so switching back is optional.
+
+**Your own builds** still install the same way as before the repository:
 
 ```sh
 sudo scripts/build.sh --packages-only     # about a minute
 sudo apt install ./out/packages/tekne-{apt-sources,branding,config,desktop}_*.deb
 ```
 
-From 0.2, Tekne's packages also come from its own APT repository (DEC-040),
-so `apt upgrade` covers both. `tests/smoke/upgrade.py` checks that path in CI:
-it installs the previous release, upgrades it through apt from a test copy of
-the repository, and re-runs the installed-system checks. All testing happens
-in virtual machines; only files under `out/` are written on the host.
+A dev build sorts above the release it was built after and below the next
+one (DEC-032), so apt moves you on to that release once it's published.
+
+`tests/smoke/upgrade.py` checks the apt path in CI: it installs the previous
+release, upgrades it through apt from a test copy of the repository, and
+re-runs the installed-system checks. All testing happens in virtual machines;
+only files under `out/` are written on the host.
