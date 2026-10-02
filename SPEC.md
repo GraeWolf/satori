@@ -262,7 +262,7 @@ Each phase is one or more small commits and ends only when every one of its crit
 ## 8. Tekne 0.2
 
 > **Status:** agreed by the maintainer (2026-10-01) and recorded as DEC-040, which
-> amends DEC-006. Phase 7 is in progress, and nothing is built yet. The docs that
+> amends DEC-006. Phase 7 is complete; Phase 8 is next. The docs that
 > describe how updates work today (README, `docs/customizing.md`) change in Phase 10,
 > when the repository exists.
 
@@ -309,9 +309,9 @@ A summary; DEC-040 is the full decision.
 ### 8.6 Phases and acceptance criteria
 Phase numbers continue from §7.
 
-**Phase 7: Repository decisions.**
+**Phase 7: Repository decisions**. ✔ Complete (2026-10-02). DEC-040 is Decided. The key exists, with its primary half on an offline USB stick. The `repo-publish` environment holds the signing subkey and its passphrase, and Pages deploys from GitHub Actions.
 - DEC-040 for the repository (hosting, suites, key custody, publishing). DEC-006 gets a History line pointing to it, and §1, §3.1 and §3.3 change to match. Done 2026-10-01.
-- (maintainer) Generate the key. Then create the `repo-publish` environment with the maintainer as required reviewer, store the signing subkey as its secret, and set Pages to deploy from GitHub Actions.
+- (maintainer) Generate the key. Then create the `repo-publish` environment with the maintainer as required reviewer, store the signing subkey (`TEKNE_REPO_SIGNING_KEY`) and its passphrase (`TEKNE_REPO_SIGNING_PASSPHRASE`) as its secrets, and set Pages to deploy from GitHub Actions. Done 2026-10-02.
 - ✅ The maintainer has marked the repository decision Decided, and Q1 to Q4 are answered. Passed 2026-10-01 (DEC-040, §8.5).
 - ✅ The repository key exists. Its public half is in `packages/tekne-apt-sources/keys/` with a line in `SHA256SUMS`, and its fingerprint is in DECISIONS.md. The primary private key isn't on any machine or service CI can reach. Passed 2026-10-02: `tekne.gpg`, primary `2401BB77…D11D7B37` (DEC-040). Only the signing subkey goes to CI.
 
