@@ -2,6 +2,61 @@
 
 ## Unreleased
 
+## 0.2 (2026-10-03)
+
+Tekne 0.2 makes an installed Tekne updatable with apt alone. Tekne's own
+packages now come from Tekne's signed APT repository (DEC-040), so
+`sudo apt update && sudo apt upgrade` updates them along with Devuan's. The
+desktop and installer are the same as 0.1.
+
+- **Tekne's APT repository** is `https://graewolf.github.io/tekne/apt/`,
+  set up by `tekne-apt-sources`. Its key is pinned in that package and
+  trusted for this repository only, and an APT pin lets it provide nothing
+  but `tekne-*` packages, so it can never replace a Devuan package.
+- **Signed with a key whose primary half is kept offline:** primary
+  `2401BB7742E09C29AA41B29441BEF97FD11D7B37`, signing subkey
+  `82C321645DE72C0575A968AC64CE1E0BA73FF9F4`. The subkey expires on
+  2027-10-02 and will be replaced before then through an ordinary update.
+- **Published only from tested releases:** the repository changes only when
+  the maintainer publishes a GitHub release and approves the publish. It's
+  built from the exact `.deb`s CI built and tested, each checked against the
+  checksum that build recorded, and its signatures are checked against the
+  key installed systems trust before anything goes live.
+- **Tested on every build:** CI checks that apt accepts the repository only
+  with its key and refuses a tampered package. It also installs 0.1 from its
+  released ISO, upgrades it through apt, and checks the result, hibernation
+  included.
+
+**Upgrading from 0.1:** once, install this release's `tekne-apt-sources`,
+then upgrade as usual:
+
+```sh
+curl -fLO https://github.com/GraeWolf/tekne/releases/download/v0.2/tekne-apt-sources_0.2_all.deb
+sudo apt install ./tekne-apt-sources_0.2_all.deb
+sudo apt update && sudo apt upgrade
+```
+
+**From 0.2-rc1:** `sudo apt update && sudo apt upgrade`. Systems that follow
+`excalibur-rc` also get future release candidates; to follow releases only,
+change `Suites: excalibur-rc` back to `Suites: excalibur` in
+`/etc/apt/sources.list.d/tekne.sources`.
+
+**Known limitations:**
+- Secure Boot must be off (DEC-016).
+- The installer takes a whole disk: no dual-boot or manual partitioning (DEC-005).
+- Tekne's updates come from GitHub Pages, so they depend on it being up;
+  Devuan's packages don't.
+- The artwork is a placeholder, and the console login greeting still names
+  Devuan (DEC-035).
+- Real-hardware testing so far is one laptop: an ASUS ROG Zephyrus G15 with
+  AMD and NVIDIA graphics.
+
+### Changes since 0.2-rc1
+- None to the system: this is 0.2-rc1 rebuilt from the tag with Devuan's
+  current packages.
+- CI's upgrade test always starts from the last final release, not a
+  release candidate, since that's what users upgrade from.
+
 ## 0.2-rc1 (2026-10-02)
 
 First release candidate of Tekne 0.2, which makes an installed Tekne
