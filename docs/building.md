@@ -256,9 +256,11 @@ tested tag (DEC-039).
    signing subkey, checks the signatures against `keys/tekne.gpg`, and deploys
    it to GitHub Pages: a release goes into `excalibur` and `excalibur-rc`, a
    pre-release into `excalibur-rc` only.
-6. Point `tests/smoke/previous-release` at the release you just published
-   (its tag, ISO name, and the ISO's SHA-256 from its `.sha256` asset), so
-   CI's upgrade test starts from it (SPEC §8, Phase 9).
+6. After a **final** release, point `tests/smoke/previous-release` at it (its
+   tag, ISO name, and the ISO's SHA-256 from its `.sha256` asset), so CI's
+   upgrade test starts from it (SPEC §8, Phase 9). Release candidates don't
+   count: during a candidate cycle the test keeps starting from the last
+   final release, which is what users upgrade from.
 7. Set `VERSION` to the next version and commit, so later dev builds sort above
    the release: after a release candidate, the next candidate (`0.1-rc2` →
    `0.1-rc3`); after a final release, the next series (`0.1` → `0.2-rc1`).

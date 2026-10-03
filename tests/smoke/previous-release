@@ -1,8 +1,9 @@
 # The release tests/smoke/upgrade.py upgrades from (SPEC §8, Phase 9): the
-# newest published release, pinned by its ISO's checksum like every external
-# input. Update all three lines after each release is published
-# (docs/building.md, "Release"); SHA256 is in the release's .sha256 asset and
-# in its build-info.txt (iso_sha256).
+# newest final release (not a release candidate: that's what users upgrade
+# from), pinned by its ISO's checksum like every external input. Update all
+# three lines after each final release is published (docs/building.md,
+# "Release"); SHA256 is in the release's .sha256 asset and in its
+# build-info.txt (iso_sha256).
 TAG=v0.1
 ISO=tekne-0.1-amd64.iso
 SHA256=06f83160a8c98c86e590072ef5ba7ad6555d6980a25108b264982c93ed2574e5
